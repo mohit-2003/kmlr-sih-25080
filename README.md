@@ -39,6 +39,52 @@ Instead, it will copy all the configuration files and the transitive dependencie
 
 You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
+# PDF Text Extractor
+
+A web app to upload PDFs, extract text using pdf-parse, Poppler pdftotext, and Tesseract OCR, and save the extracted text for further processing.
+
+# Features
+
+Upload PDFs via a web interface.
+
+Extract text from scanned PDFs and digital PDFs.
+
+Save extracted text as .txt files.
+
+View all uploaded PDFs and extracted text.
+
+# Prerequisites
+
+Node.js (v18+ recommended)
+
+npm (comes with Node.js)
+
+Poppler (for pdftotext) installed and added to system PATH
+
+Tesseract OCR installed and added to system PATH
+
+# Install Poppler (for pdftotext)
+
+Download Poppler for Windows: [Poppler Windows Releases](https://github.com/oschwartz10612/poppler-windows/releases/)
+
+Extract the ZIP (e.g., Release-25.07.0-0.zip) to a folder like:
+
+C:\poppler-25.07.0
+
+
+# Add bin folder to system PATH:
+
+Go to Environment Variables → Edit Path → Add:
+
+C:\poppler-25.07.0\Library\bin
+
+
+#  Verify installation in Command Prompt:
+
+pdftotext -v
+
+
+
 ## Learn More
 
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
@@ -68,3 +114,5 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
