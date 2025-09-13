@@ -28,27 +28,55 @@ const db = new sqlite3.Database("./files.db", (err) => {
   else console.log("✅ Connected to SQLite DB");
 });
 
+// Create table (extended schema with metadata)
 db.run(`
   CREATE TABLE IF NOT EXISTS files (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     filename TEXT NOT NULL,
+    title TEXT,
+    department TEXT,
+    summary TEXT,
+    tags TEXT,
+    type TEXT,
+    priority TEXT,
+    language TEXT DEFAULT 'English',
+    file_size INTEGER,
     upload_time TEXT DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
-// Routes
+// 📌 Upload route (file + metadata)
 app.post("/upload", upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).send("❌ No file uploaded");
 
-  const filename = req.file.filename;
+  const { title, department, summary, tags, type, priority, language } = req.body;
 
-  db.run("INSERT INTO files (filename) VALUES (?)", [filename], function (err) {
-    if (err) return res.status(500).send("❌ DB Error");
-
-    res.send(`✅ File '${filename}' uploaded & saved in database!`);
-  });
+  db.run(
+    `INSERT INTO files 
+      (filename, title, department, summary, tags, type, priority, language, file_size) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      req.file.filename,
+      title || null,
+      department || null,
+      summary || null,
+      tags || null,
+      type || null,
+      priority || null,
+      language || "English",
+      req.file.size,
+    ],
+    function (err) {
+      if (err) {
+        console.error(err);
+        return res.status(500).send("❌ DB Error");
+      }
+      res.json({ id: this.lastID, filename: req.file.filename });
+    }
+  );
 });
 
+// 📌 List all files
 app.get("/files", (req, res) => {
   db.all("SELECT * FROM files ORDER BY upload_time DESC", [], (err, rows) => {
     if (err) return res.status(500).send("❌ DB Error");
@@ -56,20 +84,28 @@ app.get("/files", (req, res) => {
   });
 });
 
-app.get("/files", (req, res) => {
-  fs.readdir(UPLOAD_FOLDER, (err, files) => {
-    if (err) {
-      return res.status(500).json({ error: "Failed to read files" });
+// 📌 Search endpoint
+app.get("/search", (req, res) => {
+  const q = `%${req.query.q || ""}%`;
+  db.all(
+    `SELECT * FROM files 
+     WHERE title LIKE ? 
+        OR department LIKE ? 
+        OR tags LIKE ? 
+        OR summary LIKE ? 
+     ORDER BY upload_time DESC`,
+    [q, q, q, q],
+    (err, rows) => {
+      if (err) return res.status(500).send("❌ DB Error");
+      res.json(rows);
     }
-    res.json({ files });
-  });
+  );
 });
 
-
-// Static route to serve files
+// 📌 Serve uploaded files statically
 app.use("/uploads", express.static(UPLOAD_FOLDER));
 
-// Start server
+// 🚀 Start server
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://127.0.0.1:${PORT}`);

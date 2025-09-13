@@ -5,7 +5,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   const handleDashboardClick = () => {
-    navigate("/upload");
+    navigate("/dashboard");
   };
 
   return (
@@ -15,13 +15,19 @@ const LandingPage = () => {
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 mb-10 md:mb-0">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">KMRL Document Intelligence Platform</h1>
-            <p className="text-xl text-blue-100 mb-8">AI-powered document processing to streamline operations, ensure compliance, and enhance decision-making across Kochi Metro Rail Limited.</p>
+            <p className="text-xl text-blue-100 mb-8">AI-powered solution to address Kochi Metro Rail Limited's document management challenges</p>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
               <button 
                 onClick={handleDashboardClick}
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg font-medium text-lg hover:bg-blue-700 transition"
               >
-                Access Dashboard
+                View Solution
+              </button>
+              <button 
+                onClick={() => navigate("/upload")}
+                className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg font-medium text-lg hover:bg-white hover:text-blue-900 transition"
+              >
+                Try Demo
               </button>
             </div>
           </div>
@@ -30,34 +36,31 @@ const LandingPage = () => {
               <div className="absolute -inset-6 bg-blue-600 opacity-20 rounded-2xl blur-lg"></div>
               <div className="relative bg-white text-gray-900 p-6 rounded-2xl shadow-xl max-w-md">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-semibold">Document Processing</h3>
+                  <h3 className="font-semibold">Document Intelligence</h3>
                   <div className="flex space-x-2">
                     <div className="w-3 h-3 rounded-full bg-red-400"></div>
                     <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                     <div className="w-3 h-3 rounded-full bg-green-400"></div>
                   </div>
                 </div>
-                <div className="bg-gray-100 p-4 rounded-lg mb-4">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-600">Document Analysis</span>
-                    <span className="font-semibold">94%</span>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Multi-format Processing</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full" style={{width: '95%'}}></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{width: '94%'}}></div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Bilingual Analysis</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-purple-600 h-2 rounded-full" style={{width: '88%'}}></div>
+                    </div>
                   </div>
-                </div>
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-600">Multi-language Processing</span>
-                    <span className="font-semibold">89%</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-purple-600 h-2 rounded-full" style={{width: '89%'}}></div>
-                  </div>
-                </div>
-                <div className="mt-6 flex justify-center">
-                  <div className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
-                    Processing 5,200+ documents daily
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">AI Classification</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-green-600 h-2 rounded-full" style={{width: '92%'}}></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -67,190 +70,185 @@ const LandingPage = () => {
       </section>
 
       {/* Problem Statement Section */}
-      <section className="py-16 bg-white">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4">The Document Management Challenge</h2>
-            <p className="text-gray-600">KMRL generates and receives thousands of critical documents daily across multiple formats and languages</p>
+          <div className="text-center max-w-4xl mx-auto mb-16">
+            <h2 className="text-3xl font-bold mb-6">The KMRL Document Management Challenge</h2>
+            <p className="text-lg text-gray-600 leading-relaxed">
+              Since its first commercial run in 2017, KMRL has grown into a complex, multidisciplinary enterprise 
+              that generates and receives thousands of documents daily: engineering drawings, maintenance job cards, 
+              incident reports, vendor invoices, regulatory directives, safety circulars, HR policies, and board-meeting 
+              minutes across multiple formats and languages.
+            </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-blue-50 p-6 rounded-xl border-l-4 border-blue-600">
-              <h3 className="text-lg font-semibold mb-3">Information Latency</h3>
-              <p className="text-gray-600">Managers spend hours searching for actionable information in lengthy documents</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <div className="bg-red-50 p-6 rounded-xl border-l-4 border-red-500">
+              <h3 className="text-lg font-semibold mb-3 text-red-800">Information Latency</h3>
+              <p className="text-red-700">Front-line managers spend hours searching for actionable information in lengthy documents, delaying critical decisions on train availability, contractor payments, and staffing.</p>
             </div>
             
-            <div className="bg-blue-50 p-6 rounded-xl border-l-4 border-purple-600">
-              <h3 className="text-lg font-semibold mb-3">Siloed Awareness</h3>
-              <p className="text-gray-600">Critical information remains confined within departments, hindering coordination</p>
+            <div className="bg-blue-50 p-6 rounded-xl border-l-4 border-blue-500">
+              <h3 className="text-lg font-semibold mb-3 text-blue-800">Siloed Awareness</h3>
+              <p className="text-blue-700">Departments work in isolation - Procurement may negotiate contracts unaware of Engineering's design changes; HR schedules training unaware of new safety bulletins.</p>
             </div>
             
-            <div className="bg-blue-50 p-6 rounded-xl border-l-4 border-red-600">
-              <h3 className="text-lg font-semibold mb-3">Compliance Exposure</h3>
-              <p className="text-gray-600">Regulatory updates get buried in inboxes, risking missed deadlines</p>
+            <div className="bg-yellow-50 p-6 rounded-xl border-l-4 border-yellow-500">
+              <h3 className="text-lg font-semibold mb-3 text-yellow-800">Compliance Exposure</h3>
+              <p className="text-yellow-700">Regulatory updates from Commissioner of Metro Rail Safety and Ministry of Housing & Urban Affairs get buried in inboxes, risking missed deadlines and audit failures.</p>
             </div>
             
-            <div className="bg-blue-50 p-6 rounded-xl border-l-4 border-green-600">
-              <h3 className="text-lg font-semibold mb-3">Knowledge Attrition</h3>
-              <p className="text-gray-600">Institutional memory vanishes when key personnel transfer or retire</p>
+            <div className="bg-purple-50 p-6 rounded-xl border-l-4 border-purple-500">
+              <h3 className="text-lg font-semibold mb-3 text-purple-800">Knowledge Attrition</h3>
+              <p className="text-purple-700">Institutional memory vanishes when key personnel transfer or retire, taking hard-won insights with them despite being documented somewhere in the system.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 bg-gray-50">
+      {/* Our Solution Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 to-gray-100">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold mb-4">Intelligent Document Processing</h2>
-            <p className="text-gray-600">Our AI-powered platform extracts, summarizes, and routes critical information across departments</p>
+          <div className="text-center max-w-4xl mx-auto mb-16">
+            <h2 className="text-3xl font-bold mb-6">Our AI-Powered Solution</h2>
+            <p className="text-lg text-gray-700">
+              We equip every stakeholder—from station controllers to executive directors—with rapid, trustworthy snapshots 
+              of the documents that matter to them, while preserving traceability to the original source.
+            </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow-md transition-transform duration-300 hover:transform hover:-translate-y-1 hover:shadow-xl">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 flex items-center justify-center text-white mb-6">
-                <i className="fas fa-file-alt text-2xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Multi-format Processing</h3>
-              <p className="text-gray-600">Process engineering drawings, maintenance cards, invoices, regulatory documents, and more from various sources including email, Maximo, SharePoint, and scanned copies.</p>
-            </div>
-            
-            <div className="bg-white p-8 rounded-2xl shadow-md transition-transform duration-300 hover:transform hover:-translate-y-1 hover:shadow-xl">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 flex items-center justify-center text-white mb-6">
-                <i className="fas fa-language text-2xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Bilingual Analysis</h3>
-              <p className="text-gray-600">Advanced NLP capabilities to process documents in English, Malayalam, and bilingual hybrids with embedded tables, photos, and signatures.</p>
-            </div>
-            
-            <div className="bg-white p-8 rounded-2xl shadow-md transition-transform duration-300 hover:transform hover:-translate-y-1 hover:shadow-xl">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 flex items-center justify-center text-white mb-6">
-                <i className="fas fa-bell text-2xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Smart Alerting</h3>
-              <p className="text-gray-600">Automated routing of critical information to relevant stakeholders with priority-based alerting for time-sensitive documents like safety bulletins and regulatory updates.</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold mb-4">Streamlined Document Workflow</h2>
-            <p className="text-gray-600">From document ingestion to actionable insights</p>
-          </div>
-          
-          <div className="flex flex-col md:flex-row space-y-10 md:space-y-0 md:space-x-8 items-center">
-            <div className="md:w-1/2">
-              <div className="relative">
-                <div className="absolute -inset-6 bg-blue-600 opacity-10 rounded-2xl blur-lg"></div>
-                <div className="relative bg-blue-50 p-8 rounded-2xl shadow-lg">
-                  <div className="flex items-start mb-6">
-                    <div className="w-10 h-10 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-4">1</div>
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">Document Ingestion</h3>
-                      <p className="text-gray-600">Seamlessly capture documents from multiple sources: email attachments, SharePoint, Maximo exports, WhatsApp PDFs, and scanned hard copies.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="bg-white p-8 rounded-2xl shadow-lg">
+                <h3 className="text-xl font-semibold mb-4 text-blue-800">How It Works</h3>
+                <div className="space-y-6">
+                  <div className="flex items-start">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                      <span className="font-bold text-blue-700">1</span>
                     </div>
-                  </div>
-                  <div className="flex items-start mb-6">
-                    <div className="w-10 h-10 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-4">2</div>
                     <div>
-                      <h3 className="text-xl font-semibold mb-2">AI Processing</h3>
-                      <p className="text-gray-600">Our advanced algorithms classify, extract key information, summarize content, and identify critical action items in both English and Malayalam.</p>
+                      <h4 className="font-semibold mb-1">Document Ingestion</h4>
+                      <p className="text-gray-600 text-sm">Capture documents from email, SharePoint, Maximo exports, WhatsApp PDFs, and scanned copies</p>
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <div className="w-10 h-10 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-4">3</div>
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                      <span className="font-bold text-blue-700">2</span>
+                    </div>
                     <div>
-                      <h3 className="text-xl font-semibold mb-2">Smart Distribution</h3>
-                      <p className="text-gray-600">Relevant information is automatically routed to appropriate departments and personnel with appropriate priority levels and deadlines.</p>
+                      <h4 className="font-semibold mb-1">AI Processing</h4>
+                      <p className="text-gray-600 text-sm">Advanced OCR, GPT summarization, and classification in both English and Malayalam</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                      <span className="font-bold text-blue-700">3</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Smart Distribution</h4>
+                      <p className="text-gray-600 text-sm">Automatic routing to relevant departments with priority-based alerts</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <div className="md:w-1/2 flex justify-center">
-              <img 
-                src="https://cdn-icons-png.flaticon.com/512/1006/1006555.png" 
-                alt="Document workflow illustration" 
-                className="w-full max-w-md"
-              />
+
+            <div>
+              <div className="bg-white p-8 rounded-2xl shadow-lg">
+                <h3 className="text-xl font-semibold mb-4 text-blue-800">Key Benefits</h3>
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                      <span className="text-green-600 text-sm">✓</span>
+                    </div>
+                    <p className="text-gray-700">Faster cross-department coordination</p>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                      <span className="text-green-600 text-sm">✓</span>
+                    </div>
+                    <p className="text-gray-700">Strengthened regulatory compliance</p>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                      <span className="text-green-600 text-sm">✓</span>
+                    </div>
+                    <p className="text-gray-700">Preserved institutional knowledge</p>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                      <span className="text-green-600 text-sm">✓</span>
+                    </div>
+                    <p className="text-gray-700">Reduced manual duplication of effort</p>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                      <span className="text-green-600 text-sm">✓</span>
+                    </div>
+                    <p className="text-gray-700">Enhanced decision-making speed</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Department Benefits */}
-      <section className="py-16 bg-gradient-to-r from-blue-800 to-blue-600 text-white">
+      {/* Technical Capabilities */}
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Department-Specific Solutions</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-blue-700 bg-opacity-30 p-6 rounded-xl backdrop-filter backdrop-blur-sm">
-              <h3 className="text-xl font-semibold mb-3 flex items-center">
-                <i className="fas fa-tools mr-2"></i> Engineering
-              </h3>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <i className="fas fa-check-circle text-green-300 mt-1 mr-2"></i>
-                  <span>Instant alerts for design changes and maintenance requirements</span>
-                </li>
-                <li className="flex items-start">
-                  <i className="fas fa-check-circle text-green-300 mt-1 mr-2"></i>
-                  <span>Automated processing of technical drawings and job cards</span>
-                </li>
-              </ul>
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl font-bold mb-6">Technical Architecture</h2>
+            <p className="text-gray-600">Built with modern AI technologies to handle KMRL's specific document challenges</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="text-center p-6 bg-gray-50 rounded-xl">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">🔍</span>
+              </div>
+              <h3 className="font-semibold mb-2">OCR Processing</h3>
+              <p className="text-gray-600 text-sm">Open Source AI Models (Tesseract, PaddleOCR, EasyOCR) for text extraction from scans and images</p>
             </div>
-            
-            <div className="bg-blue-700 bg-opacity-30 p-6 rounded-xl backdrop-filter backdrop-blur-sm">
-              <h3 className="text-xl font-semibold mb-3 flex items-center">
-                <i className="fas fa-file-invoice-dollar mr-2"></i> Finance
-              </h3>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <i className="fas fa-check-circle text-green-300 mt-1 mr-2"></i>
-                  <span>Automated invoice processing and payment tracking</span>
-                </li>
-                <li className="flex items-start">
-                  <i className="fas fa-check-circle text-green-300 mt-1 mr-2"></i>
-                  <span>Contract compliance monitoring</span>
-                </li>
-              </ul>
+
+            <div className="text-center p-6 bg-gray-50 rounded-xl">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">🤖</span>
+              </div>
+              <h3 className="font-semibold mb-2">GPT Analysis</h3>
+              <p className="text-gray-600 text-sm">Advanced AI summarization, translation, and action item extraction</p>
             </div>
-            
-            <div className="bg-blue-700 bg-opacity-30 p-6 rounded-xl backdrop-filter backdrop-blur-sm">
-              <h3 className="text-xl font-semibold mb-3 flex items-center">
-                <i className="fas fa-shield-alt mr-2"></i> Safety & Compliance
-              </h3>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <i className="fas fa-check-circle text-green-300 mt-1 mr-2"></i>
-                  <span>Priority alerts for regulatory updates</span>
-                </li>
-                <li className="flex items-start">
-                  <i className="fas fa-check-circle text-green-300 mt-1 mr-2"></i>
-                  <span>Automated compliance deadline tracking</span>
-                </li>
-              </ul>
+
+            <div className="text-center p-6 bg-gray-50 rounded-xl">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📊</span>
+              </div>
+              <h3 className="font-semibold mb-2">Smart Classification</h3>
+              <p className="text-gray-600 text-sm">Automatic department routing (HR, Engineering, Finance, etc.) based on content analysis</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gray-100">
+      <section className="py-20 bg-gradient-to-r from-blue-800 to-blue-600 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-6">Ready to Transform KMRL's Document Management?</h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-10">Join us in building a more efficient, compliant, and coordinated Kochi Metro Rail Limited.</p>
-          <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+          <h2 className="text-3xl font-bold mb-6">Ready to Solve KMRL's Document Challenges?</h2>
+          <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-10">
+            Experience how our AI-powered platform can transform document management for Kochi Metro Rail Limited
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
             <button 
               onClick={handleDashboardClick}
-              className="bg-blue-700 text-white px-8 py-4 rounded-lg font-medium text-lg hover:bg-blue-800 transition"
+              className="bg-white text-blue-700 px-8 py-4 rounded-lg font-medium text-lg hover:bg-gray-100 transition-colors"
             >
-              Access Platform
+              View Live Demo
+            </button>
+            <button 
+              onClick={() => navigate("/upload")}
+              className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg font-medium text-lg hover:bg-white hover:text-blue-700 transition-colors"
+            >
+              Try Document Upload
             </button>
           </div>
         </div>
@@ -259,45 +257,17 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-xl">KM</div>
-                <span className="ml-3 font-semibold text-xl">KMRL Intelligence</span>
-              </div>
-              <p className="text-gray-400">Advanced document processing solutions for Kochi Metro Rail Limited.</p>
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-xl">KM</div>
+              <span className="ml-3 font-semibold text-xl">KMRL Document Intelligence</span>
             </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Departments</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition">Engineering</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition">Operations</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition">Finance</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition">Safety & Compliance</a></li>
-              </ul>
+            <p className="text-gray-400 max-w-2xl mx-auto mb-6">
+              A comprehensive solution addressing Kochi Metro Rail Limited's document management challenges through AI-powered processing and analysis.
+            </p>
+            <div className="border-t border-gray-800 pt-6 text-center text-gray-400">
+              <p>&copy; 2024 KMRL Document Intelligence Platform. All rights reserved.</p>
             </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition">User Guides</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition">Training Materials</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition">API Documentation</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition">Support Portal</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Contact</h3>
-              <p className="text-gray-400 mb-2">Kochi Metro Rail Limited</p>
-              <p className="text-gray-400">Cochin, Kerala 682016</p>
-              <p className="text-gray-400 mt-2">document.intel@kmrl.co.in</p>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 mt-10 pt-6 text-center text-gray-400">
-            <p>&copy; 2023 Kochi Metro Rail Limited. All rights reserved.</p>
           </div>
         </div>
       </footer>
