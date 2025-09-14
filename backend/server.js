@@ -2,6 +2,9 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+// Database connection
+const connectDB = require("./config/database");
+
 // Initialize Gemini
 const { initGemini } = require("./utils/geminiClient");
 const {
@@ -12,6 +15,9 @@ const {
 } = require("./config/config");
 
 const app = express();
+
+// Connect to MongoDB
+connectDB();
 
 // Middleware
 app.use(cors());
@@ -35,4 +41,5 @@ app.use("/uploads", express.static(UPLOAD_FOLDER));
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📊 MongoDB connected and ready`);
 });

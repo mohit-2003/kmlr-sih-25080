@@ -32,7 +32,7 @@ async function processDocument(file) {
     // Step 2: OCR Processing
     console.log("🔍 Processing OCR...");
     const ocrResult = await ocrProcessor.process(file);
-    result.data.text = ocrResult.text;
+    result.data.extracted_text = ocrResult.text;
     result.data.confidence = ocrResult.confidence;
     result.data.language = ocrResult.language;
     result.processing_status.ocr = "success";
@@ -45,10 +45,10 @@ async function processDocument(file) {
 
   try {
     // Step 3: LLM Analysis (only if we have text)
-    if (result.data.text) {
+    if (result.data.extracted_text) {
       console.log("🤖 Running AI analysis...");
       result.data.content_analysis = await geminiService.analyzeDocument(
-        result.data.text
+        result.data.extracted_text
       );
       result.processing_status.llm_analysis = "success";
       console.log("✅ AI analysis completed");
