@@ -8,7 +8,7 @@ if (!fs.existsSync(UPLOAD_FOLDER)) {
 }
 
 module.exports = {
-  PORT: process.env.PORT || 5000,
+  PORT: process.env.PORT || 3001,
   UPLOAD_FOLDER,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-2.5-flash",

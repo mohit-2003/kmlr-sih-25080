@@ -28,7 +28,7 @@ const Navbar = () => {
           Home
         </Link>
 
-        <Link
+        {/* <Link
           to="/upload"
           className={`no-underline font-medium transition-colors py-2 px-4 rounded-lg ${
             isActive("/upload")
@@ -37,7 +37,7 @@ const Navbar = () => {
           }`}
         >
           Upload Documents
-        </Link>
+        </Link> */}
 
         <Link
           to="/dashboard"
