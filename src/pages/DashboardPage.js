@@ -1,89 +1,90 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
   const [role, setRole] = useState(null);
   const [documents, setDocuments] = useState([]);
-  const [selectedDoc, setSelectedDoc] = useState(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [showLoginForm, setShowLoginForm] = useState(true);
+  const [loginData, setLoginData] = useState({
+    username: "",
+    password: ""
+  });
+
+  const navigate = useNavigate();
 
   const predefinedRoles = [
-    { id: "admin", name: "Administrator", color: "bg-red-100 text-red-800" },
-    { id: "hr", name: "Human Resources", color: "bg-blue-100 text-blue-800" },
-    { id: "engineering", name: "Engineering", color: "bg-green-100 text-green-800" }
+    { id: "admin", name: "Administrator", color: "bg-gradient-to-r from-red-100 to-red-50 text-red-800 border border-red-200" },
+    { id: "hr", name: "Human Resources", color: "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border border-blue-200" },
+    { id: "engineering", name: "Engineering", color: "bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200" }
   ];
 
-  // Simulate loading documents based on role
-  useEffect(() => {
-    if (role) {
-      setLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        const sampleDocs = [
-          {
-            id: 1,
-            name: "Q3 Environmental Report.pdf",
-            size: "2.45 MB",
-            type: "Environmental Report",
-            date: new Date().toLocaleDateString(),
-            priority: "HIGH",
-            summary: "This report shows a 15% reduction in carbon emissions compared to last quarter, exceeding our sustainability goals.",
-            tags: ["sustainability", "quarterly"]
-          },
-          {
-            id: 2,
-            name: "Employee Wellness Program.docx",
-            size: "1.23 MB",
-            type: "HR Policy",
-            date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-            priority: "MEDIUM",
-            summary: "New wellness initiatives to support employee mental health and work-life balance.",
-            tags: ["wellness", "policy"]
-          },
-          {
-            id: 3,
-            name: "Infrastructure Upgrade Plan.pdf",
-            size: "3.78 MB",
-            type: "Technical Document",
-            date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-            priority: "HIGH",
-            summary: "Plan to migrate servers to renewable energy sources by Q2 next year.",
-            tags: ["infrastructure", "sustainability"]
-          }
-        ];
-        setDocuments(sampleDocs);
-        setLoading(false);
-        setNotification(`Welcome ${predefinedRoles.find(r => r.id === role).name}!`);
-        setTimeout(() => setNotification(null), 3000);
-      }, 1000);
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    if (loginData.username && loginData.password) {
+      setShowLoginForm(false);
+      setNotification("Login successful!");
+      setTimeout(() => setNotification(null), 3000);
+    } else {
+      setNotification("Please enter both username and password");
+      setTimeout(() => setNotification(null), 3000);
     }
+  };
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (role) {
+        setLoading(true);
+        try {
+          const response = await fetch('http://localhost:5000/api/documents');
+          const data = await response.json();
+          if (data.success) {
+            setDocuments(data.documents);
+          } else {
+            setNotification("Failed to fetch documents.");
+          }
+        } catch (error) {
+          console.error("Fetch error:", error);
+          setNotification("Failed to connect to server.");
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchDocuments();
   }, [role]);
 
   const handleLogin = (role) => {
     setRole(role);
-    setSelectedDoc(null);
     setSearch("");
   };
 
   const handleLogout = () => {
     setRole(null);
     setDocuments([]);
-    setSelectedDoc(null);
+    setShowLoginForm(true);
+    setLoginData({ username: "", password: "" });
   };
 
   const handleUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
       const newDoc = {
-        id: documents.length + 1,
-        name: file.name,
-        size: (file.size / 1024 / 1024).toFixed(2) + " MB",
-        type: file.type.split('/')[1].toUpperCase() + " Document",
-        date: new Date().toLocaleDateString(),
-        priority: "MEDIUM",
-        summary: "This is a mock AI summary of the uploaded document. The content appears to be relevant to your role and responsibilities.",
-        tags: ["uploaded"]
+        _id: Date.now().toString(),
+        originalname: file.name,
+        metadata: {
+          file_size: (file.size / 1024 / 1024).toFixed(2) + " MB"
+        },
+        upload_time: new Date().toISOString(),
+        content_analysis: {
+          priority: "medium",
+          doc_type: file.type.split('/')[1].toUpperCase() + " Document",
+          departments: ["uploaded"],
+          summary: "This is a mock AI summary of the uploaded document."
+        }
       };
       setDocuments([...documents, newDoc]);
       setNotification(`Document "${file.name}" uploaded successfully!`);
@@ -93,54 +94,182 @@ const DashboardPage = () => {
 
   const deleteDocument = (id, e) => {
     e.stopPropagation();
-    const doc = documents.find(d => d.id === id);
-    setDocuments(documents.filter(doc => doc.id !== id));
-    if (selectedDoc && selectedDoc.id === id) {
-      setSelectedDoc(null);
+    const doc = documents.find(d => d._id === id);
+    if (doc) {
+      setDocuments(documents.filter(doc => doc._id !== id));
+      setNotification(`Document "${doc.originalname}" deleted successfully!`);
+      setTimeout(() => setNotification(null), 3000);
     }
-    setNotification(`Document "${doc.name}" deleted successfully!`);
-    setTimeout(() => setNotification(null), 3000);
   };
 
-  const filteredDocs = documents.filter((doc) =>
-    doc.name.toLowerCase().includes(search.toLowerCase()) ||
-    doc.type.toLowerCase().includes(search.toLowerCase()) ||
-    doc.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredDocs = documents.filter((doc) => {
+    if (!doc) return false;
+    
+    const nameMatch = doc.originalname && 
+      doc.originalname.toLowerCase().includes(search.toLowerCase());
+    
+    const typeMatch = doc.content_analysis?.doc_type &&
+      doc.content_analysis.doc_type.toLowerCase().includes(search.toLowerCase());
+    
+    const tagMatch = doc.content_analysis?.departments &&
+      doc.content_analysis.departments.some(tag => 
+        tag && tag.toLowerCase().includes(search.toLowerCase())
+      );
+    
+    return nameMatch || typeMatch || tagMatch;
+  });
 
   const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "HIGH": return "bg-red-100 text-red-800";
-      case "MEDIUM": return "bg-yellow-100 text-yellow-800";
-      case "LOW": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+    if (!priority) return "bg-gradient-to-r from-gray-100 to-gray-50 text-gray-800 border border-gray-200";
+    
+    switch (priority.toLowerCase()) {
+      case "high": return "bg-gradient-to-r from-red-100 to-red-50 text-red-800 border border-red-200";
+      case "medium": return "bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border border-yellow-200";
+      case "low": return "bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200";
+      default: return "bg-gradient-to-r from-gray-100 to-gray-50 text-gray-800 border border-gray-200";
     }
   };
 
+  const getFileIcon = (fileName) => {
+    if (!fileName) {
+      return (
+        <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+        </svg>
+      );
+    }
+    
+    const extension = fileName.split('.').pop().toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return (
+          <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'docx':
+      case 'doc':
+        return (
+          <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+          </svg>
+        );
+      default:
+        return (
+          <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+          </svg>
+        );
+    }
+  };
+  
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       {/* Notification */}
       {notification && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg z-50 animate-fadeIn">
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fadeIn flex items-center">
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
           {notification}
         </div>
       )}
       
       <div className="max-w-7xl mx-auto">
-        {!role ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh]">
-            <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-md">
-              <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">Document Dashboard</h1>
-              <p className="text-gray-600 text-center mb-8">Select your role to continue</p>
+        {showLoginForm ? (
+          <div className="flex flex-col items-center justify-center min-h-screen">
+            <div className="w-full max-w-md p-10 bg-white rounded-2xl shadow-xl border border-gray-100">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl shadow-md mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">KMRI Intelligence Platform</h1>
+                <p className="text-gray-600">Sign in to access your documents</p>
+              </div>
               
-              <div className="space-y-4">
+              <form onSubmit={handleLoginSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                    Username
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <input
+                      id="username"
+                      type="text"
+                      value={loginData.username}
+                      onChange={(e) => setLoginData({...loginData, username: e.target.value})}
+                      className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-colors"
+                      placeholder="Enter your username"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <input
+                      id="password"
+                      type="password"
+                      value={loginData.password}
+                      onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                      className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-colors"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+                </div>
+                
+                <button
+                  type="submit"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-medium flex items-center justify-center"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Sign In
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : !role ? (
+          <div className="flex flex-col items-center justify-center min-h-screen">
+            <div className="w-full max-w-2xl p-10 bg-white rounded-2xl shadow-xl border border-gray-100">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl shadow-md mb-4">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">KMRI Intelligence Platform</h1>
+                <p className="text-gray-600">Select your role to continue</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {predefinedRoles.map((r) => (
                   <button
                     key={r.id}
                     onClick={() => handleLogin(r.id)}
-                    className={`w-full py-3 px-4 rounded-lg transition-all duration-200 ${r.color} hover:opacity-90 font-medium`}
+                    className={`p-6 rounded-xl transition-all duration-300 ${r.color} hover:shadow-md hover:-translate-y-1 flex flex-col items-center`}
                   >
-                    Login as {r.name}
+                    <div className="w-12 h-12 rounded-lg bg-white shadow-inner mb-3 flex items-center justify-center">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <span className="font-medium">Login as {r.name}</span>
                   </button>
                 ))}
               </div>
@@ -151,22 +280,25 @@ const DashboardPage = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">Document Dashboard</h1>
-                <p className="text-gray-600">
-                  Welcome, <span className="font-medium">{predefinedRoles.find(r => r.id === role).name}</span>
+                <h1 className="text-3xl font-bold text-gray-800 mb-1">KMRI Intelligence Platform</h1>
+                <p className="text-gray-600 text-lg">
+                  Welcome, <span className="font-semibold text-blue-600">{predefinedRoles.find(r => r.id === role).name}</span>
                 </p>
               </div>
               
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                className="px-5 py-2.5 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all shadow-sm hover:shadow-md border border-gray-200 font-medium flex items-center"
               >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
                 Logout
               </button>
             </div>
 
             {/* Search and Upload */}
-            <div className="bg-white p-6 rounded-xl shadow-sm mb-8">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
               <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                 <div className="relative flex-grow">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -179,12 +311,12 @@ const DashboardPage = () => {
                     placeholder="Search documents by name, type or tags..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-colors"
                   />
                 </div>
                 
                 <div className="w-full md:w-auto">
-                  <label className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors font-medium">
+                  <label className="flex items-center justify-center px-5 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-medium">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
@@ -197,42 +329,50 @@ const DashboardPage = () => {
 
             {/* Documents Grid */}
             {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              <div className="flex justify-center items-center h-64 bg-white rounded-2xl shadow-sm border border-gray-100">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading your documents...</p>
+                </div>
               </div>
             ) : (
               <>
                 <div className="mb-6 flex justify-between items-center">
                   <h2 className="text-xl font-semibold text-gray-800">Your Documents</h2>
-                  <span className="text-sm text-gray-600">{filteredDocs.length} documents</span>
+                  <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">{filteredDocs.length} documents</span>
                 </div>
                 
                 {filteredDocs.length === 0 ? (
-                  <div className="bg-white p-8 rounded-xl shadow-sm text-center">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 text-center">
+                    <svg className="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">No documents found</h3>
-                    <p className="mt-2 text-gray-500">Try adjusting your search or upload a new document.</p>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">No documents found</h3>
+                    <p className="text-gray-500 mb-6">Try adjusting your search or upload a new document.</p>
+                    <label className="inline-flex items-center justify-center px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-medium">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      Upload Your First Document
+                      <input type="file" onChange={handleUpload} className="hidden" />
+                    </label>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     {filteredDocs.map((doc) => (
                       <div
-                        key={doc.id}
-                        className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md cursor-pointer ${selectedDoc?.id === doc.id ? 'ring-2 ring-blue-500' : ''}`}
-                        onClick={() => setSelectedDoc(doc)}
+                        key={doc._id}
+                        className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md cursor-pointer transform hover:-translate-y-1`}
+                        onClick={() => navigate(`/documents/${doc._id}`)}
                       >
-                        <div className="p-5">
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
+                        <div className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                              {getFileIcon(doc.originalname)}
                             </div>
                             <button 
-                              onClick={(e) => deleteDocument(doc.id, e)}
-                              className="text-gray-400 hover:text-red-500 transition-colors"
+                              onClick={(e) => deleteDocument(doc._id, e)}
+                              className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-50"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -240,28 +380,28 @@ const DashboardPage = () => {
                             </button>
                           </div>
                           
-                          <h3 className="font-semibold text-gray-900 mb-1 truncate">{doc.name}</h3>
-                          <div className="flex items-center text-sm text-gray-600 mb-3">
-                            <span>{doc.size}</span>
+                          <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2" style={{ height: '3rem' }}>{doc.originalname}</h3>
+                          <div className="flex items-center text-sm text-gray-600 mb-4">
+                            <span>{doc.metadata?.file_size || "Unknown size"}</span>
                             <span className="mx-2">•</span>
-                            <span>{doc.date}</span>
+                            <span>{doc.upload_time ? new Date(doc.upload_time).toLocaleDateString() : "Unknown date"}</span>
                           </div>
                           
                           <div className="flex flex-wrap gap-2 mb-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(doc.priority)}`}>
-                              {doc.priority}
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(doc.content_analysis?.priority)}`}>
+                              {doc.content_analysis?.priority || "Unknown"}
                             </span>
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              {doc.type}
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              {doc.content_analysis?.doc_type || "Unknown type"}
                             </span>
                           </div>
                           
                           <div className="flex flex-wrap gap-1">
-                            {doc.tags.map((tag, index) => (
-                              <span key={index} className="px-2 py-1 rounded-md text-xs bg-blue-50 text-blue-700">
+                            {doc.content_analysis?.departments?.map((tag, index) => (
+                              <span key={index} className="px-2 py-1 rounded-md text-xs bg-blue-100 text-blue-700">
                                 #{tag}
                               </span>
-                            ))}
+                            )) || <span className="text-xs text-gray-500">No tags</span>}
                           </div>
                         </div>
                       </div>
@@ -270,89 +410,9 @@ const DashboardPage = () => {
                 )}
               </>
             )}
-
-            {/* Document Detail */}
-            {selectedDoc && (
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <div className="flex justify-between items-start mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">{selectedDoc.name}</h2>
-                  <button 
-                    onClick={() => setSelectedDoc(null)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium text-gray-600 mb-1">Type</h3>
-                    <p className="font-medium">{selectedDoc.type}</p>
-                  </div>
-                  
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium text-gray-600 mb-1">Size</h3>
-                    <p className="font-medium">{selectedDoc.size}</p>
-                  </div>
-                  
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium text-gray-600 mb-1">Date</h3>
-                    <p className="font-medium">{selectedDoc.date}</p>
-                  </div>
-                </div>
-                
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Priority</h3>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(selectedDoc.priority)}`}>
-                    {selectedDoc.priority}
-                  </span>
-                </div>
-                
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">Tags</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedDoc.tags.map((tag, index) => (
-                      <span key={index} className="px-3 py-1 rounded-md text-sm bg-blue-100 text-blue-800">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600 mb-2">AI Summary</h3>
-                  <p className="text-gray-800 bg-blue-50 p-4 rounded-lg">{selectedDoc.summary}</p>
-                </div>
-                
-                <div className="mt-6 flex gap-3">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download
-                  </button>
-                  
-                  <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
-                    Share
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-      `}</style>
     </div>
   );
 };
