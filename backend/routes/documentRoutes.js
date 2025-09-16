@@ -16,6 +16,9 @@ router.get("/documents", documentController.getDocuments);
 // Get single document
 router.get("/documents/:id", documentController.getDocumentById);
 
+// Get single document
+router.delete("/document/:id", documentController.deleteDocumentById);
+
 // Search documents
 router.get("/search", documentController.searchDocuments);
 

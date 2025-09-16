@@ -141,6 +141,31 @@ const getDocumentById = async (req, res) => {
   }
 };
 
+// Delete single document by ID
+const deleteDocumentById = async (req, res) => {
+  try {
+    const document = await Document.findByIdAndDelete(req.params.id);
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        error: "Document not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Document deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete document by ID error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete document",
+    });
+  }
+};
+
 // Search documents
 const searchDocuments = async (req, res) => {
   try {
@@ -248,6 +273,7 @@ module.exports = {
   processDocument,
   getDocuments,
   getDocumentById,
+  deleteDocumentById,
   searchDocuments,
   getAnalytics,
 };

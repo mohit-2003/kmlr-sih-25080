@@ -166,13 +166,47 @@ const useDashboard = () => {
     }
   };
 
-  const deleteDocument = (id, e) => {
+  const deleteDocument = async (id, e) => {
     e.stopPropagation();
+
     const doc = documents.find((d) => d._id === id);
-    if (doc) {
-      setDocuments(documents.filter((doc) => doc._id !== id));
-      setNotification(`Document "${doc.originalname}" deleted successfully!`);
-      setTimeout(() => setNotification(null), 3000);
+    if (!doc) return;
+
+    // Optimistically remove from UI
+    const updatedDocs = documents.filter((d) => d._id !== id);
+    setDocuments(updatedDocs);
+
+    // Show loading notification
+    setNotification({
+      type: "info",
+      message: `Deleting "${doc.originalname}"...`,
+    });
+
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_URL}/api/document/${id}`,
+        { method: "DELETE" }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+
+      // Success
+      setNotification({
+        type: "success",
+        message: `✅ Document "${doc.originalname}" deleted successfully!`,
+      });
+    } catch (err) {
+      console.error("Delete error:", err);
+
+      // Rollback (put doc back in list)
+      setDocuments((prev) => [...prev, doc]);
+
+      setNotification({
+        type: "error",
+        message: `❌ Failed to delete "${doc.originalname}". Please try again.`,
+      });
     }
   };
 
