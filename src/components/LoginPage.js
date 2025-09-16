@@ -21,7 +21,7 @@ const LoginPage = ({ loginData, setLoginData, handleLogin }) => {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            KMRI Intelligence Platform
+            KMRL InsightVault
           </h1>
           <p className="text-gray-600">Sign in to access your documents</p>
         </div>
