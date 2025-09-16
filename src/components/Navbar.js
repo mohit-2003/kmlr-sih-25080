@@ -13,7 +13,7 @@ const Navbar = () => {
           🚉
         </div>
         <h2 className="m-0 text-xl font-bold font-inter">
-          KMRL Intelligence Platform
+          KMRL InsightVault
         </h2>
       </div>
       <div className="flex gap-6">
