@@ -4,6 +4,9 @@ import Navbar from "./components/Navbar";
 import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage"; // ⬅️ Import the new Dashboard
 import DocumentDetailPage from "./pages/DocumentDetailPage";
+import DashboardLayout from "./components/SidebarLayout";
+import IntegrationsPage from "./pages/IntegrationsPage";
+import SearchPage from "./pages/SearchPage";
 
 function App() {
   return (
@@ -11,11 +14,19 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         <Routes>
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            {/* <Route path="/documents" element={<AllDocumentsPage />} /> */}
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/integrations" element={<IntegrationsPage />} />
+          </Route>
+        </Routes>
+        {/* <Routes>
           <Route path="/" element={<LandingPage />} />
-          {/* <Route path="/upload" element={<UploadPage />} /> */}
+          <Route path="/upload" element={<UploadPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/document/:id" element={<DocumentDetailPage />} />
-        </Routes>
+        </Routes> */}
       </div>
     </Router>
   );
