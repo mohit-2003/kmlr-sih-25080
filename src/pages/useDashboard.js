@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 const useDashboard = () => {
   const [role, setRole] = useState(null);
@@ -12,6 +12,20 @@ const useDashboard = () => {
     username: "",
     password: "",
   });
+
+  useEffect(() => {
+    const savedUser = Cookies.get("user");
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setRole(parsedUser.role);
+        setLoginData({ username: parsedUser.username, password: "" });
+        setShowLoginForm(false);
+      } catch (err) {
+        console.error("Failed to parse user cookie", err);
+      }
+    }
+  }, []);
 
   const predefinedRoles = [
     {
@@ -37,7 +51,19 @@ const useDashboard = () => {
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     if (loginData.username && loginData.password) {
+      // Example: Save username + role in cookies
+      Cookies.set(
+        "user",
+        JSON.stringify({ username: loginData.username, role: "admin" }),
+        {
+          expires: 1, // cookie expiry (days)
+          //   secure: true, // only send on HTTPS
+          sameSite: "Strict",
+        }
+      );
+
       setShowLoginForm(false);
+      setRole("admin"); // or actual role from backend
       setNotification("Login successful!");
       setTimeout(() => setNotification(null), 3000);
     } else {
@@ -48,27 +74,27 @@ const useDashboard = () => {
 
   useEffect(() => {
     const fetchDocuments = async () => {
-      if (role) {
-        setLoading(true);
-        try {
-          const response = await fetch("http://localhost:5000/api/documents");
-          const data = await response.json();
-          if (data.success) {
-            setDocuments(data.documents);
-          } else {
-            setNotification("Failed to fetch documents.");
-          }
-        } catch (error) {
-          console.error("Fetch error:", error);
-          setNotification("Failed to connect to server.");
-        } finally {
-          setLoading(false);
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_SERVER_URL}/api/documents`
+        );
+        const data = await response.json();
+        if (data.success) {
+          setDocuments(data.documents);
+        } else {
+          setNotification("Failed to fetch documents.");
         }
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setNotification("Failed to connect to server.");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchDocuments();
-  }, [role]);
+  }, []);
 
   const handleLogin = (role) => {
     setRole(role);
@@ -76,6 +102,7 @@ const useDashboard = () => {
   };
 
   const handleLogout = () => {
+    Cookies.remove("user");
     setRole(null);
     setDocuments([]);
     setShowLoginForm(true);
@@ -251,6 +278,7 @@ const useDashboard = () => {
         );
     }
   };
+
   return {
     notification,
     loginData,

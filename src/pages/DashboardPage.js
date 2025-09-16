@@ -143,7 +143,7 @@ const DashboardPage = () => {
                       <div
                         key={doc._id}
                         className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md cursor-pointer transform hover:-translate-y-1`}
-                        onClick={() => navigate(`/documents/${doc._id}`)}
+                        onClick={() => navigate(`/document/${doc._id}`)}
                       >
                         <div className="p-6">
                           <div className="flex justify-between items-start mb-4">
