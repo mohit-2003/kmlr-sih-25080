@@ -23,7 +23,7 @@ const AllDocumentsPage = () => {
       ) : (
         <>
           <div className="mb-6 flex justify-between items-center">
-            {filteredDocs.length == 0 && (
+            {filteredDocs.length === 0 && (
               <h2 className="text-xl font-semibold text-gray-800">
                 {"No Documents"}
               </h2>
