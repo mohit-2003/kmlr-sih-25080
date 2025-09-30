@@ -9,6 +9,7 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import SearchPage from "./pages/SearchPage";
 import AllDocumentsPage from "./pages/AllDocumentsPage";
 import DepartmentsPage from "./pages/DepartmentsPage";
+import LoginPage from "./components/LoginPage";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/documents" element={<AllDocumentsPage />} />
