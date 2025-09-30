@@ -117,6 +117,19 @@ const LoginPage = ({ loginData, setLoginData, handleLogin }) => {
             Sign In
           </button>
         </form>
+
+        {/* Demo Credentials */}
+        <div className="mt-6 text-center text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <p>
+            <strong>Demo Login:</strong>
+          </p>
+          <p>
+            Username: <span className="font-mono font-medium">admin</span>
+          </p>
+          <p>
+            Password: <span className="font-mono font-medium">admin</span>
+          </p>
+        </div>
       </div>
     </div>
   );
