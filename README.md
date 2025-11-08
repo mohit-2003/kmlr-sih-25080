@@ -54,13 +54,6 @@ Manual document handling causes:
 
 ---
 
-Excellent 🔥 — you want a **clean, structured “Features” section** for your GitHub README (like the product management example you gave), but for **your project: KMRL InsightVault**.
-
-Here’s the complete list of **current + future-ready features** — grouped by functional area, formatted exactly like a GitHub “Features” section.
-Each line is short, specific, and clear — perfect for a README.
-
----
-
 ### ✨ **Features — KMRL InsightVault**
 
 
