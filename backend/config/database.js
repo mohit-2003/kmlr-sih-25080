@@ -22,8 +22,7 @@ export const connectDB = async () => {
     console.log("✅ PostgreSQL Connection established successfully.");
   } catch (error) {
     console.error("❌ Unable to connect to PostgreSQL:", error);
-  } finally {
-    await sequelize.close();
+    process.exit(1); // Exit app if DB connection fails
   }
 };
 
