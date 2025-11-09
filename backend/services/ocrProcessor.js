@@ -1,9 +1,9 @@
-const fs = require("fs");
-const path = require("path");
-const { detectLanguage } = require("./utils");
-const { exec } = require("child_process");
-const pdfParse = require("pdf-parse");
-const Tesseract = require("tesseract.js");
+import fs from "fs";
+import path from "path";
+import { detectLanguage } from "./utils.js";
+import { exec } from "child_process";
+import pdfParse from "pdf-parse";
+import Tesseract from "tesseract.js";
 
 async function process(file) {
   console.log(`🔍 Starting text extraction for: ${file.originalname}`);
@@ -269,7 +269,7 @@ function getSupportedFileTypes() {
   };
 }
 
-module.exports = {
+export default {
   process,
   getSupportedFileTypes,
 };

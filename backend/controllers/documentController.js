@@ -1,6 +1,5 @@
-const documentProcessor = require("../services/documentProcessor");
-const db = require("../config/database");
-const Document = require("../models/Document");
+import documentProcessor from "../services/documentProcessor.js";
+import Document from "../models/Document.js";
 
 // Main document processing endpoint
 const processDocument = async (req, res) => {
@@ -269,7 +268,7 @@ const getAnalytics = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   processDocument,
   getDocuments,
   getDocumentById,

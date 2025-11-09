@@ -1,6 +1,6 @@
-const metadataExtractor = require("./metadataExtractor");
-const ocrProcessor = require("./ocrProcessor");
-const geminiService = require("./geminiService");
+import metadataExtractor from "./metadataExtractor.js";
+import ocrProcessor from "./ocrProcessor.js";
+import * as geminiService from "./geminiService.js";
 
 async function processDocument(file) {
   const startTime = Date.now();
@@ -78,6 +78,4 @@ async function processDocument(file) {
   return result;
 }
 
-module.exports = {
-  processDocument,
-};
+export default processDocument;

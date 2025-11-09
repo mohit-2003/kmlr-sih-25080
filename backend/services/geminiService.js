@@ -1,5 +1,5 @@
-const { generate } = require("../utils/geminiClient");
-const { DEPARTMENTS } = require("./utils");
+import { generate } from "../utils/geminiClient.js";
+import { DEPARTMENTS } from "./utils.js";
 
 async function analyzeDocument(text) {
   try {
@@ -207,7 +207,4 @@ async function generateSummary(text, type = "short") {
   }
 }
 
-module.exports = {
-  analyzeDocument,
-  generateSummary,
-};
+export { analyzeDocument, generateSummary };
