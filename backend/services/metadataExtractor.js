@@ -7,5 +7,4 @@ async function extract(file) {
     original_filename: file.originalname,
   };
 }
-
-module.exports = { extract };
+export default extract;

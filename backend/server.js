@@ -1,18 +1,17 @@
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
-
-// Database connection
-const connectDB = require("./config/database");
-
-// Initialize Gemini
-const { initGemini } = require("./utils/geminiClient");
-const {
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { connectDB } from "./config/database.js";
+import documentRoutes from "./routes/documentRoutes.js";
+import { initGemini } from "./utils/geminiClient.js";
+import {
   GEMINI_API_KEY,
   GEMINI_MODEL,
   PORT,
   UPLOAD_FOLDER,
-} = require("./config/config");
+} from "./config/constants.js";
+
+dotenv.config();
 
 const app = express();
 
@@ -32,8 +31,7 @@ try {
 }
 
 // Routes
-const documentRoutes = require("./routes/documentRoutes");
-app.use("/api", documentRoutes);
+app.use("/api/v1", documentRoutes);
 
 // Static route to serve uploaded files
 app.use("/uploads", express.static(UPLOAD_FOLDER));
@@ -41,5 +39,4 @@ app.use("/uploads", express.static(UPLOAD_FOLDER));
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 MongoDB connected and ready`);
 });

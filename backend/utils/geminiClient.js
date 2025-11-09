@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 let model = null;
 
@@ -16,4 +16,4 @@ async function generate(prompt, options = {}) {
   return result.response.text().trim();
 }
 
-module.exports = { initGemini, generate };
+export { initGemini, generate };

@@ -1,20 +1,30 @@
-const mongoose = require("mongoose");
+import { Sequelize } from "sequelize";
+import dotenv from "dotenv";
 
-const connectDB = async () => {
+dotenv.config();
+
+const sequelize = new Sequelize(
+  process.env.DB_NAME || "document_processor",
+  process.env.DB_USER || "postgres",
+  process.env.DB_PASSWORD || "postgres",
+  {
+    host: process.env.DB_HOST || "localhost",
+    port: process.env.DB_PORT || 5432,
+    dialect: "postgres",
+    logging: false,
+  }
+);
+
+export const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/document-processor",
-      {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      }
-    );
-
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    await sequelize.authenticate();
+    await sequelize.sync({ alter: true }); // sync all models
+    console.log("✅ PostgreSQL Connection established successfully.");
   } catch (error) {
-    console.error("❌ MongoDB connection error:", error);
-    process.exit(1);
+    console.error("❌ Unable to connect to PostgreSQL:", error);
+  } finally {
+    await sequelize.close();
   }
 };
 
-module.exports = connectDB;
+export { sequelize };

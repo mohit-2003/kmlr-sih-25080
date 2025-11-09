@@ -1,150 +1,102 @@
-const mongoose = require("mongoose");
+import { DataTypes } from "sequelize";
+import { sequelize } from "../config/database.js";
 
-const DocumentSchema = new mongoose.Schema(
+const Document = sequelize.define(
+  "Document",
   {
     // File information
     filename: {
-      type: String,
-      required: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     originalname: {
-      type: String,
-      required: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     file_path: {
-      type: String,
-      required: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
 
-    // Processing status
+    // Processing status (JSONB)
     processing_status: {
-      metadata: {
-        type: String,
-        enum: ["pending", "success", "failed"],
-        default: "pending",
-      },
-      ocr: {
-        type: String,
-        enum: ["pending", "success", "failed", "skipped"],
-        default: "pending",
-      },
-      llm_analysis: {
-        type: String,
-        enum: ["pending", "success", "failed", "partial_failure", "skipped"],
-        default: "pending",
-      },
-      overall: {
-        type: String,
-        enum: ["pending", "success", "partial_success", "failed"],
-        default: "pending",
+      type: DataTypes.JSONB,
+      defaultValue: {
+        metadata: "pending",
+        ocr: "pending",
+        llm_analysis: "pending",
+        overall: "pending",
       },
     },
 
     // Metadata
     metadata: {
-      doc_type: String,
-      file_size: Number,
-      created_time: Date,
-      processed_time: {
-        type: Date,
-        default: Date.now,
+      type: DataTypes.JSONB,
+      defaultValue: {
+        doc_type: null,
+        file_size: null,
+        created_time: null,
+        processed_time: new Date(),
+        confidence: null,
+        language: null,
+        processing_time: null,
       },
-      confidence: Number,
-      language: String,
-      processing_time: Number, // in seconds
     },
 
-    // Extracted content
+    // Extracted text
     extracted_text: {
-      type: String,
-      default: "",
+      type: DataTypes.TEXT,
+      defaultValue: "",
     },
 
-    // Content analysis (from LLM)
+    // Content analysis (LLM)
     content_analysis: {
-      title: {
-        type: String,
-        default: "",
+      type: DataTypes.JSONB,
+      defaultValue: {
+        title: "",
+        purpose: "",
+        departments: [],
+        priority: "medium",
+        deadlines: "Not applicable",
+        document_category: "general",
+        short_summary: "",
+        detailed_summary: [],
+        key_entities: [],
       },
-      purpose: {
-        type: String,
-        default: "",
-      },
-      departments: [
-        {
-          type: String,
-          enum: [
-            "Engineering",
-            "HR",
-            "Finance",
-            "Safety",
-            "Legal",
-            "Procurement",
-            "Operations",
-            "IT",
-            "Administration",
-          ],
-        },
-      ],
-      priority: {
-        type: String,
-        enum: ["low", "medium", "high", "critical"],
-        default: "medium",
-      },
-      deadlines: {
-        type: String,
-        default: "Not applicable",
-      },
-      document_category: {
-        type: String,
-        default: "general",
-      },
-      short_summary: {
-        type: String,
-        default: "",
-      },
-      detailed_summary: [
-        {
-          type: String,
-        },
-      ],
-      key_entities: [
-        {
-          type: String,
-        },
-      ],
     },
 
     // Processing errors
-    processing_errors: [
-      {
-        type: String,
-      },
-    ],
+    processing_errors: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      defaultValue: [],
+    },
 
     // Upload timestamp
     upload_time: {
-      type: Date,
-      default: Date.now,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
     },
   },
   {
     timestamps: true, // adds createdAt and updatedAt
+    indexes: [
+      {
+        using: "GIN",
+        fields: ["content_analysis"],
+        name: "content_analysis_gin_idx",
+      },
+      {
+        using: "GIN",
+        fields: ["processing_status"],
+        name: "processing_status_gin_idx",
+      },
+      {
+        fields: ["upload_time"],
+        order: [["upload_time", "DESC"]],
+        name: "upload_time_idx",
+      },
+    ],
   }
 );
 
-// Create text indexes for searching
-DocumentSchema.index({
-  "content_analysis.title": "text",
-  "content_analysis.short_summary": "text",
-  extracted_text: "text",
-  "content_analysis.key_entities": "text",
-});
-
-// Index for common queries
-DocumentSchema.index({ "content_analysis.departments": 1 });
-DocumentSchema.index({ "content_analysis.priority": 1 });
-DocumentSchema.index({ "processing_status.overall": 1 });
-DocumentSchema.index({ upload_time: -1 });
-
-module.exports = mongoose.model("Document", DocumentSchema);
+export default Document;

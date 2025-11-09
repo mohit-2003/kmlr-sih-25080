@@ -1,8 +1,8 @@
-const express = require("express");
-const router = express.Router();
-const upload = require("../middleware/upload");
-const documentController = require("../controllers/documentController");
+import express from "express";
+import upload from "../middleware/upload.js";
+import * as documentController from "../controllers/documentController.js";
 
+const router = express.Router();
 // Main document processing route
 router.post(
   "/process-document",
@@ -25,4 +25,4 @@ router.get("/search", documentController.searchDocuments);
 // Get analytics
 router.get("/analytics", documentController.getAnalytics);
 
-module.exports = router;
+export default router;
