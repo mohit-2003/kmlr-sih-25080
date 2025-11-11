@@ -4,98 +4,111 @@ import { sequelize } from "../config/database.js";
 const Document = sequelize.define(
   "Document",
   {
-    // File information
-    filename: {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+
+    // --- File Metadata ---
+    file_name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    originalname: {
+    file_type: {
       type: DataTypes.STRING,
-      allowNull: false,
+      defaultValue: "pdf",
     },
-    file_path: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-
-    // Processing status (JSONB)
-    processing_status: {
-      type: DataTypes.JSONB,
-      defaultValue: {
-        metadata: "pending",
-        ocr: "pending",
-        llm_analysis: "pending",
-        overall: "pending",
-      },
-    },
-
-    // Metadata
-    metadata: {
-      type: DataTypes.JSONB,
-      defaultValue: {
-        doc_type: null,
-        file_size: null,
-        created_time: null,
-        processed_time: new Date(),
-        confidence: null,
-        language: null,
-        processing_time: null,
-      },
-    },
-
-    // Extracted text
-    extracted_text: {
+    storage_url: {
       type: DataTypes.TEXT,
-      defaultValue: "",
+      allowNull: false,
+    },
+    uploaded_by: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      // references: {
+      //   model: "users",
+      //   key: "id",
+      // },
+    },
+    file_size: {
+      type: DataTypes.BIGINT,
     },
 
-    // Content analysis (LLM)
-    content_analysis: {
+    // --- Priority ---
+    priority: {
+      type: DataTypes.ENUM("LOW", "NORMAL", "HIGH"),
+      defaultValue: "NORMAL",
+    },
+
+    // --- Processing Status ---
+    status: {
+      type: DataTypes.ENUM(
+        "UPLOADED",
+        "PREPROCESSING",
+        "PREPROCESSED",
+        "SUMMARIZING",
+        "SUMMARIZED",
+        "ROUTING",
+        "ROUTED",
+        "COMPLETED",
+        "FAILED"
+      ),
+      defaultValue: "UPLOADED",
+    },
+    error_stage: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    error_message: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
+    // --- Processing Data ---
+    language_detected: {
+      type: DataTypes.STRING,
+    },
+    raw_text: {
+      type: DataTypes.TEXT, // OCR text, internal use only
+    },
+
+    // --- Summaries (Bilingual) ---
+    short_summary_en: {
+      type: DataTypes.TEXT,
+    },
+    short_summary_ml: {
+      type: DataTypes.TEXT,
+    },
+    detailed_summary_en: {
+      type: DataTypes.TEXT,
+    },
+    detailed_summary_ml: {
+      type: DataTypes.TEXT,
+    },
+
+    // --- AI Outputs ---
+    action_items: {
       type: DataTypes.JSONB,
-      defaultValue: {
-        title: "",
-        purpose: "",
-        departments: [],
-        priority: "medium",
-        deadlines: "Not applicable",
-        document_category: "general",
-        short_summary: "",
-        detailed_summary: [],
-        key_entities: [],
-      },
     },
-
-    // Processing errors
-    processing_errors: {
+    tags: {
       type: DataTypes.ARRAY(DataTypes.STRING),
-      defaultValue: [],
     },
 
-    // Upload timestamp
-    upload_time: {
+    // --- Routing ---
+    assigned_departments: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+    },
+    routed_at: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+    },
+    completed_at: {
+      type: DataTypes.DATE,
     },
   },
   {
-    timestamps: true, // adds createdAt and updatedAt
-    indexes: [
-      {
-        using: "GIN",
-        fields: ["content_analysis"],
-        name: "content_analysis_gin_idx",
-      },
-      {
-        using: "GIN",
-        fields: ["processing_status"],
-        name: "processing_status_gin_idx",
-      },
-      {
-        fields: ["upload_time"],
-        order: [["upload_time", "DESC"]],
-        name: "upload_time_idx",
-      },
-    ],
+    tableName: "documents",
+    timestamps: true, // createdAt & updatedAt
   }
 );
 
