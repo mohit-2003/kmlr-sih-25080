@@ -53,32 +53,32 @@ async function processDocument(file) {
   // -----------------------------
   // Step 2: OCR Processing
   // -----------------------------
-  // try {
-  //   console.log("🔍 [Step 2] Running OCR service...");
+  try {
+    console.log("🔍 [Step 2] Running OCR service...");
 
-  //   const ocrResult = await ocrService(file);
+    const ocrResult = await ocrService(file);
 
-  //   result.data.extracted_text = ocrResult.text || "";
-  //   result.data.confidence = ocrResult.confidence || 0;
-  //   result.data.language = ocrResult.language || "unknown";
-  //   result.data.ocr_method = ocrResult.method || "unknown";
+    result.data.extracted_text = ocrResult.text || "";
+    result.data.confidence = ocrResult.confidence || 0;
+    result.data.language = ocrResult.language || "unknown";
+    result.data.ocr_method = ocrResult.method || "unknown";
 
-  //   result.processing_status.ocr = "success";
-  //   console.log(
-  //     `✅ OCR completed (${Math.round(
-  //       (ocrResult.confidence || 0) * 100
-  //     )}% confidence, Lang: ${ocrResult.language})`
-  //   );
-  // } catch (error) {
-  //   console.error("❌ OCR processing failed:", error);
+    result.processing_status.ocr = "success";
+    console.log(
+      `✅ OCR completed (${Math.round(
+        (ocrResult.confidence || 0) * 100
+      )}% confidence, Lang: ${ocrResult.language})`
+    );
+  } catch (error) {
+    console.error("❌ OCR processing failed:", error);
 
-  //   result.processing_status.ocr = "failed";
-  //   result.errors.push({
-  //     stage: "ocr",
-  //     message: error.message,
-  //     stack: error.stack || null,
-  //   });
-  // }
+    result.processing_status.ocr = "failed";
+    result.errors.push({
+      stage: "ocr",
+      message: error.message,
+      stack: error.stack || null,
+    });
+  }
 
   // -----------------------------
   // Step 3: LLM Analysis
