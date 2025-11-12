@@ -1,10 +1,19 @@
+// src/components/Navbar.jsx
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { role, logout } = useAuth();
 
   const isActive = (path) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <nav className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-blue-800 to-blue-600 text-white sticky top-0 z-50 shadow-lg">
@@ -16,39 +25,56 @@ const Navbar = () => {
           KMRL InsightVault
         </h2>
       </div>
-      <div className="flex gap-6">
-        <Link
-          to="/"
-          className={`no-underline font-medium transition-colors py-2 px-4 rounded-lg ${
-            isActive("/")
-              ? "bg-white text-blue-800 font-semibold"
-              : "text-white hover:bg-blue-700"
-          }`}
-        >
-          Home
-        </Link>
-
-        {/* <Link
-          to="/upload"
-          className={`no-underline font-medium transition-colors py-2 px-4 rounded-lg ${
-            isActive("/upload")
-              ? "bg-white text-blue-800 font-semibold"
-              : "text-white hover:bg-blue-700"
-          }`}
-        >
-          Upload Documents
-        </Link> */}
-
-        <Link
-          to="/dashboard"
-          className={`no-underline font-medium transition-colors py-2 px-4 rounded-lg ${
-            isActive("/dashboard")
-              ? "bg-white text-blue-800 font-semibold"
-              : "text-white hover:bg-blue-700"
-          }`}
-        >
-          Dashboard
-        </Link>
+      
+      <div className="flex gap-6 items-center">
+        {!role ? (
+          // Show when not logged in
+          <>
+            <Link
+              to="/"
+              className={`no-underline font-medium transition-colors py-2 px-4 rounded-lg ${
+                isActive("/")
+                  ? "bg-white text-blue-800 font-semibold"
+                  : "text-white hover:bg-blue-700"
+              }`}
+            >
+              Home
+            </Link>
+            <Link
+              to="/login"
+              className={`no-underline font-medium transition-colors py-2 px-4 rounded-lg ${
+                isActive("/login")
+                  ? "bg-white text-blue-800 font-semibold"
+                  : "text-white hover:bg-blue-700"
+              }`}
+            >
+              Login
+            </Link>
+          </>
+        ) : (
+          // Show when logged in
+          <>
+            <Link
+              to="/dashboard"
+              className={`no-underline font-medium transition-colors py-2 px-4 rounded-lg ${
+                isActive("/dashboard")
+                  ? "bg-white text-blue-800 font-semibold"
+                  : "text-white hover:bg-blue-700"
+              }`}
+            >
+              Dashboard
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="no-underline font-medium transition-colors py-2 px-4 rounded-lg text-white hover:bg-blue-700 border border-white/30"
+            >
+              Logout
+            </button>
+            <span className="text-sm bg-white/20 px-3 py-1 rounded-full">
+              {role}
+            </span>
+          </>
+        )}
       </div>
     </nav>
   );
