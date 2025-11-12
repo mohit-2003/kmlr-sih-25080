@@ -1,138 +1,146 @@
-import React from "react";
+// src/components/LoginPage.jsx
+import React, { useState } from "react";
+import { EyeIcon, EyeSlashIcon, UserIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-const LoginPage = ({ loginData, setLoginData, handleLogin }) => {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <div className="w-full max-w-md p-10 bg-white rounded-2xl shadow-xl border border-gray-100">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl shadow-md mb-4">
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            KMRL InsightVault
-          </h1>
-          <p className="text-gray-600">Sign in to access your documents</p>
-        </div>
+const LoginPage = () => {
+    const [showPassword, setShowPassword] = useState(false);
+    const [loginData, setLoginData] = useState({
+        username: '',
+        password: ''
+    });
+    const [error, setError] = useState('');
+    const { login } = useAuth();
+    const navigate = useNavigate();
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Username
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <input
-                id="username"
-                type="text"
-                value={loginData.username}
-                onChange={(e) =>
-                  setLoginData({ ...loginData, username: e.target.value })
-                }
-                className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-colors"
-                placeholder="Enter your username"
-              />
+    const handleChange = (e) => {
+        setLoginData({ ...loginData, [e.target.id]: e.target.value });
+        setError('');
+    };
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        
+        // Simple validation - replace with actual API call
+        if (loginData.username === 'demo@kmrl.com' && loginData.password === 'admin123') {
+            login('admin');
+            navigate('/dashboard');
+        } else {
+            setError('Invalid credentials. Please try again.');
+        }
+    };
+
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50/70"> 
+            <div className="w-full max-w-md p-10 bg-white rounded-2xl shadow-2xl border border-gray-100">
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-700 to-indigo-900 rounded-xl shadow-lg mb-4">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                        KMRL InsightVault
+                    </h1>
+                    <p className="text-gray-600">Enter your credentials to access your account</p>
+                </div>
+
+                <form onSubmit={handleLogin} className="space-y-6">
+                    <div>
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                            Employee ID / Email
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <UserIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                id="username"
+                                name="username"
+                                type="text"
+                                value={loginData.username}
+                                onChange={handleChange}
+                                className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-colors"
+                                placeholder="Enter your Employee ID or Email"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                                Password
+                            </label>
+                            <a href="/forgot-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
+                                Forgot Password?
+                            </a>
+                        </div>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                id="password"
+                                name="password"
+                                type={showPassword ? "text" : "password"}
+                                value={loginData.password}
+                                onChange={handleChange}
+                                className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-colors"
+                                placeholder="Enter your password"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={togglePasswordVisibility}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                            >
+                                {showPassword ? (
+                                    <EyeSlashIcon className="h-5 w-5" />
+                                ) : (
+                                    <EyeIcon className="h-5 w-5" />
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-red-600 text-sm font-medium">{error}</p>
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        className="w-full py-3 px-4 bg-indigo-700 text-white rounded-xl hover:bg-indigo-800 transition-all shadow-md hover:shadow-lg font-medium flex items-center justify-center text-lg"
+                    >
+                        Sign In
+                    </button>
+                </form>
+
+                <div className="mt-6 text-center text-sm text-gray-500">
+                    <p className="mb-2">
+                        New employee? 
+                        <a href="/request-access" className="font-semibold text-indigo-600 hover:text-indigo-500 ml-1 transition-colors">
+                            Request Access
+                        </a>
+                    </p>
+                    
+                    <div className="mt-4 p-3 bg-gray-100 rounded-lg border border-gray-200 text-xs">
+                        <p className="font-medium text-gray-700 mb-1">
+                            **Demo Login Credentials:**
+                        </p>
+                        <p>ID: <span className="font-mono text-gray-900 font-semibold">demo@kmrl.com</span> | Pass: <span className="font-mono text-gray-900 font-semibold">admin123</span></p>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-              <input
-                id="password"
-                type="password"
-                value={loginData.password}
-                onChange={(e) =>
-                  setLoginData({ ...loginData, password: e.target.value })
-                }
-                className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-colors"
-                placeholder="Enter your password"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-medium flex items-center justify-center"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-              />
-            </svg>
-            Sign In
-          </button>
-        </form>
-
-        {/* Demo Credentials */}
-        <div className="mt-6 text-center text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <p>
-            <strong>Demo Login:</strong>
-          </p>
-          <p>
-            Username: <span className="font-mono font-medium">admin</span>
-          </p>
-          <p>
-            Password: <span className="font-mono font-medium">admin</span>
-          </p>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default LoginPage;
