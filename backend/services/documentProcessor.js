@@ -1,6 +1,6 @@
 import metadataExtractor from "./metadataExtractor.js";
 import ocrService from "./ocr/index.js";
-import * as geminiService from "./geminiService.js";
+import { analyzeDocument } from "./llm/documentAnalyzer.js";
 
 /**
  * Main document processing pipeline
@@ -83,29 +83,32 @@ async function processDocument(file) {
   // -----------------------------
   // Step 3: LLM Analysis
   // -----------------------------
-  // try {
-  //   if (result.data.extracted_text) {
-  //     console.log("🤖 Running AI analysis...");
-  //     result.data.content_analysis = await geminiService.analyzeDocument(
-  //       result.data.extracted_text
-  //     );
-  //     result.processing_status.llm_analysis = "success";
-  //     console.log("✅ AI analysis completed");
-  //   } else {
-  //     result.processing_status.llm_analysis = "skipped";
-  //     result.errors.push({
-  //       stage: "llm_analysis",
-  //       message: "No text available for AI analysis",
-  //     });
-  //   }
-  // } catch (error) {
-  //   console.error("❌ LLM analysis failed:", error);
-  //   result.processing_status.llm_analysis = "failed";
-  //   result.errors.push({
-  //     stage: "llm_analysis",
-  //     message: error.message,
-  //   });
-  // }
+  try {
+    if (result.data.extracted_text?.trim()) {
+      console.log("🤖 [Step 3] Running AI analysis...");
+      result.data.content_analysis = await analyzeDocument(
+        result.data.extracted_text
+      );
+
+      result.processing_status.llm_analysis = "success";
+      console.log("AI analysis completed");
+    } else {
+      result.processing_status.llm_analysis = "skipped";
+      result.errors.push({
+        stage: "llm_analysis",
+        message: "No extracted text available for AI analysis",
+      });
+    }
+  } catch (error) {
+    console.error("❌ LLM analysis failed:", error);
+
+    result.processing_status.llm_analysis = "failed";
+    result.errors.push({
+      stage: "llm_analysis",
+      message: error.message,
+      stack: error.stack,
+    });
+  }
 
   return finalizeResult(result, startTime);
 }

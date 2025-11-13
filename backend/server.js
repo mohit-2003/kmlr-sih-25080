@@ -3,13 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/database.js";
 import documentRoutes from "./routes/documentRoutes.js";
-import { initGemini } from "./utils/geminiClient.js";
-import {
-  GEMINI_API_KEY,
-  GEMINI_MODEL,
-  PORT,
-  UPLOAD_FOLDER,
-} from "./config/constants.js";
+import { initLLM } from "./services/llm/llmAdapter.js";
+
+import { PORT, UPLOAD_FOLDER } from "./config/constants.js";
 
 dotenv.config();
 
@@ -24,10 +20,10 @@ app.use(express.json());
 
 // Initialize Gemini
 try {
-  initGemini(GEMINI_API_KEY, GEMINI_MODEL);
-  console.log("✅ Gemini client initialized");
+  initLLM();
+  console.log("Gemini client initialized");
 } catch (err) {
-  console.error("❌ Gemini init error:", err.message);
+  console.error("Gemini init error:", err.message);
 }
 
 // Routes
