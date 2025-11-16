@@ -2,6 +2,7 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Button from "./ui/button";
 
 const Navbar = () => {
   const location = useLocation();
@@ -64,12 +65,12 @@ const Navbar = () => {
             >
               Dashboard
             </Link>
-            <button
+            <Button
               onClick={handleLogout}
               className="no-underline font-medium transition-colors py-2 px-4 rounded-lg text-white hover:bg-blue-700 border border-white/30"
             >
               Logout
-            </button>
+            </Button>
             <span className="text-sm bg-white/20 px-3 py-1 rounded-full">
               {role}
             </span>
