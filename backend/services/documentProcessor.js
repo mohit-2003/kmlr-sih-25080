@@ -1,6 +1,8 @@
 import metadataExtractor from "./metadataExtractor.js";
 import ocrService from "./ocr/index.js";
 import { analyzeDocument } from "./llm/documentAnalyzer.js";
+import uploadToS3 from "./s3Uploader.js";
+
 
 /**
  * Main document processing pipeline
@@ -12,6 +14,7 @@ async function processDocument(file) {
   const result = {
     success: true,
     processing_status: {
+      upload: "pending",
       metadata: "pending",
       ocr: "pending",
       llm_analysis: "pending",
@@ -20,6 +23,31 @@ async function processDocument(file) {
     data: {},
     errors: [],
   };
+
+   // -----------------------------
+  // Step 0: Upload to S3
+  // -----------------------------
+  try {
+    console.log("⬆️ [Step 0] Uploading file to S3...");
+
+    const s3Url = await uploadToS3(file);
+    result.data.file_url = s3Url;
+    result.processing_status.upload = "success";
+
+    console.log("✅ File uploaded to S3:", s3Url);
+  } catch (error) {
+    console.error("❌ S3 upload failed:", error);
+
+    result.processing_status.upload = "failed";
+    result.errors.push({
+      stage: "upload",
+      message: error.message,
+      stack: error.stack,
+    });
+
+    return finalizeResult(result, startTime);
+  }
+
 
   // -----------------------------
   // Step 1: Metadata Extraction
