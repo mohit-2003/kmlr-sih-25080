@@ -24,13 +24,18 @@ export const processDocument = async (req, res) => {
     const newDoc = await Document.create({
       file_name: req.file.originalname,
       file_type: req.file.mimetype || "pdf",
-      storage_url: req.file.path,
+      storage_url: result.data.file_url,
       uploaded_by: req.user?.id || 0,
-      size_in_bytes: req.file.size,
+      file_size: req.file.size,
       priority: result.data.priority || "NORMAL",
-      status: result.status || "COMPLETED",
-      error_stage: result.error_stage || null,
-      error_message: result.error_message || null,
+      status:
+      result.processing_status?.overall === "success"
+      ? "COMPLETED"
+      : result.processing_status?.overall === "failed"
+      ? "FAILED"
+      : "PREPROCESSED",
+      error_stage: result.errors?.[0]?.stage || null,
+      error_message: result.errors?.[0]?.message || null,
       language_detected: result.data.language || "unknown",
       raw_text: result.data.extracted_text || "",
       short_summary_en: result.data.short_summary_en || "",
