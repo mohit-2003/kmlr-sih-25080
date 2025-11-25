@@ -14,39 +14,93 @@ export const processDocument = async (req, res) => {
         error: "No file uploaded",
       });
     }
+    const employeeId = req.body.employeeId
+      ? parseInt(req.body.employeeId)
+      : null;
+
+    if (!employeeId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing employeeId in form data",
+      });
+    }
 
     console.log(`📄 Processing uploaded document: ${req.file.originalname}`);
 
     // Step 1: Run OCR & AI pipeline
     const result = await documentProcessor(req.file);
+    console.log("documentProcessor result", result);
+
+    // If LLM failed, this will be undefined, so we default to empty object
+    const analysis = result.data.content_analysis || {};
+    console.log("analysis", analysis);
+    const metadata = result.data.metadata || {};
+    const extractedText = result.data.extracted_text || "";
+
+    let finalStatus = "COMPLETED";
+    let errorStage = result.error_stage || null;
+    let errorMessage = result.error_message || null;
+
+    // 1. Check if the entire process crashed
+    if (result.processing_status.overall === "failed") {
+      finalStatus = "FAILED";
+    }
+    // 2. Check if OCR ran but found no text (common issue with scanned PDFs)
+    else if (
+      result.processing_status.ocr === "success" &&
+      !extractedText.trim()
+    ) {
+      finalStatus = "UNREADABLE"; // New Status
+      errorStage = "ocr_validation";
+      errorMessage =
+        "OCR completed but no text was found. Document may be an image or password protected.";
+    }
+    // 3. Check if OCR worked, but AI Analysis failed (Partial Success)
+    else if (
+      result.processing_status.ocr === "success" &&
+      result.processing_status.llm_analysis === "failed"
+    ) {
+      finalStatus = "PARTIALLY_COMPLETED"; // New Status
+      // We keep the extracted text, but flag that summary is missing
+      errorMessage =
+        "Text extracted, but AI analysis failed. " +
+        (result.errors[0]?.message || "");
+    }
 
     // Step 2: Store to DB
     const newDoc = await Document.create({
-      file_name: req.file.originalname,
-      file_type: req.file.mimetype || "pdf",
-      storage_url: result.data.file_url,
-      uploaded_by: req.user?.id || 0,
-      file_size: req.file.size,
-      priority: result.data.priority || "NORMAL",
-      status:
-      result.processing_status?.overall === "success"
-      ? "COMPLETED"
-      : result.processing_status?.overall === "failed"
-      ? "FAILED"
-      : "PREPROCESSED",
-      error_stage: result.errors?.[0]?.stage || null,
-      error_message: result.errors?.[0]?.message || null,
+      // -- Metadata (from result.data.metadata) --
+      file_name: metadata.file_name || req.file.originalname,
+      file_type: metadata.mime_type || req.file.mimetype,
+      file_size: metadata.file_size || req.file.size,
+
+      // -- Upload Info --
+      storage_url: req.file.file_url ?? "",
+      uploaded_by: employeeId,
+
+      // -- OCR Data (from result.data) --
+      raw_text: extractedText,
       language_detected: result.data.language || "unknown",
-      raw_text: result.data.extracted_text || "",
-      short_summary_en: result.data.short_summary_en || "",
-      short_summary_ml: result.data.short_summary_ml || "",
-      detailed_summary_en: result.data.detailed_summary_en || "",
-      detailed_summary_ml: result.data.detailed_summary_ml || "",
-      action_items: result.data.action_items || [],
-      tags: result.data.tags || [],
-      assigned_departments: result.data.assigned_departments || [],
-      routed_at: result.data.routed_at || null,
-      completed_at: result.data.completed_at || null,
+
+      // -- AI Analysis (from result.data.content_analysis) --
+      priority: analysis.priority || "NORMAL",
+      short_summary_en: analysis.short_summary_en || "",
+      short_summary_ml: analysis.short_summary_ml || "",
+      detailed_summary_en: Array.isArray(analysis.detailed_summary_en)
+        ? analysis.detailed_summary_en
+        : [analysis.detailed_summary_en || ""],
+      detailed_summary_ml: Array.isArray(analysis.detailed_summary_ml)
+        ? analysis.detailed_summary_ml
+        : [analysis.detailed_summary_ml || ""],
+      action_items: analysis.action_items || [],
+      tags: analysis.tags || [],
+      assigned_departments: analysis.assigned_departments || [],
+
+      status: finalStatus,
+      error_stage: errorStage,
+      error_message: errorMessage,
+      routed_at: analysis.routed_at || null,
+      completed_at: Date.now(),
     });
 
     console.log(`Document saved successfully (ID: ${newDoc.id})`);

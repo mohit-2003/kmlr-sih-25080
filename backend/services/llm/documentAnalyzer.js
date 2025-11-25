@@ -23,33 +23,12 @@ export async function analyzeDocument(text) {
 
     const jsonResult = parseLLMResponse(rawResponse);
     const validatedResult = validateAndCleanResult(jsonResult);
+    console.log("validatedResult", validatedResult);
 
     console.log("Document analysis completed successfully");
     return validatedResult;
   } catch (error) {
     console.error("Document analysis failed:", error);
     return getFallbackAnalysis(text, error.message);
-  }
-}
-
-/**
- * Lightweight utility to generate short or detailed summaries
- */
-export async function generateSummary(text, type = "short") {
-  try {
-    const prompt =
-      type === "short"
-        ? `Provide a concise 2-3 sentence summary:\n\n${text}`
-        : `Provide a detailed bullet summary:\n\n${text}`;
-
-    const response = await generate(prompt);
-    return type === "short"
-      ? response.trim()
-      : response.split(/\n|•|- /).filter(Boolean);
-  } catch (error) {
-    console.error("Summary generation error:", error);
-    return type === "short"
-      ? "Summary not available"
-      : ["Summary not available"];
   }
 }
