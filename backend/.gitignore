@@ -27,3 +27,5 @@ uploads/
 uploads/*
 
 .env
+
+*.traineddata
