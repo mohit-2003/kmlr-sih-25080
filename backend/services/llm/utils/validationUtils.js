@@ -12,18 +12,18 @@ export function validateAndCleanResult(result = {}) {
   return {
     title: clean(result.title) || "Untitled Document",
     purpose: clean(result.purpose) || "Not specified",
-    departments: Array.isArray(result.departments)
+    assigned_departments: Array.isArray(result.departments)
       ? result.departments.filter((d) => validDepartments.includes(d))
       : ["Administration"],
-    priority: ["none", "low", "medium", "high", "critical"].includes(
+    priority: ["NORMAL", "LOW", "MEDIUM", "HIGH"].includes(
       result.priority?.toLowerCase()
     )
       ? result.priority.toLowerCase()
-      : "medium",
+      : "NORMAL",
     deadlines: clean(result.deadlines) || "Not applicable",
     document_category: clean(result.document_category) || "general",
-    short_summary: clean(result.short_summary) || "Summary not available.",
-    detailed_summary: Array.isArray(result.detailed_summary)
+    short_summary_en: clean(result.short_summary) || "Summary not available.",
+    detailed_summary_en: Array.isArray(result.detailed_summary)
       ? result.detailed_summary.map((s) => clean(s))
       : ["Content analysis unavailable."],
     key_entities: Array.isArray(result.key_entities)

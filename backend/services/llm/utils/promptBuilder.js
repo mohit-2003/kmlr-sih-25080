@@ -17,7 +17,7 @@ export function buildAnalysisPrompt(text) {
     "title": "string",
     "purpose": "string",
     "departments": ["Engineering", "HR", "Finance", "Safety", "Legal", "Procurement", "Operations", "IT", "Administration"],
-    "priority": "none | low | medium | high | critical",
+    "priority": "NORMAL | LOW | MEDIUM | HIGH",
     "deadlines": "string or 'Not applicable'",
     "document_category": "policy | procedure | request | report | directive | general",
     "short_summary": "2-3 sentence summary",

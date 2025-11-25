@@ -52,7 +52,9 @@ const Document = sequelize.define(
         "ROUTING",
         "ROUTED",
         "COMPLETED",
-        "FAILED"
+        "FAILED",
+        "UNREADABLE",
+        "PARTIALLY_COMPLETED"
       ),
       defaultValue: "UPLOADED",
     },
@@ -81,10 +83,10 @@ const Document = sequelize.define(
       type: DataTypes.TEXT,
     },
     detailed_summary_en: {
-      type: DataTypes.TEXT,
+      type: DataTypes.ARRAY(DataTypes.TEXT),
     },
     detailed_summary_ml: {
-      type: DataTypes.TEXT,
+      type: DataTypes.ARRAY(DataTypes.TEXT),
     },
 
     // --- AI Outputs ---
