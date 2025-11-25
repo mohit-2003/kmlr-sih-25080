@@ -60,7 +60,7 @@ function detectLanguage(text) {
   }
 }
 
-module.exports = {
+export {
   DEPARTMENTS,
   PRIORITY_LEVELS,
   DOCUMENT_CATEGORIES,
