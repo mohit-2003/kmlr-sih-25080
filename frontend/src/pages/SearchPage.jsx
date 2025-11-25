@@ -41,7 +41,7 @@ const SearchPage = () => {
             <div className="flex items-center gap-2 mb-2 text-green-600 font-semibold">
               <Tag size={18} /> Tag Search
             </div>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-500 text-sm">
               <em>“Find #compliance or #audit reports from last quarter”</em>
             </p>
           </div>
