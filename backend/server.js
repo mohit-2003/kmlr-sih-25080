@@ -3,7 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 // Database connection
-const connectDB = require("./config/database");
+const pool = require("./config/database");   // <-- import only
 
 // Initialize Gemini
 const { initGemini } = require("./utils/geminiClient");
@@ -16,24 +16,28 @@ const {
 
 const app = express();
 
-// Connect to MongoDB
-connectDB();
+// ❌ REMOVE THIS — pool() is not a function and you do NOT use MongoDB
+// pool();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Initialize Gemini
-try {
-  initGemini(GEMINI_API_KEY, GEMINI_MODEL);
-  console.log("✅ Gemini client initialized");
-} catch (err) {
-  console.error("❌ Gemini init error:", err.message);
-}
+//try {
+  //initGemini(GEMINI_API_KEY, GEMINI_MODEL);
+  //console.log("✅ Gemini client initialized");
+//} catch (err) {
+  //console.error("❌ Gemini init error:", err.message);
+//}
 
 // Routes
 const documentRoutes = require("./routes/documentRoutes");
 app.use("/api", documentRoutes);
+
+const authRoutes = require("./routes/authRoutes");
+app.use("/api/auth", authRoutes);
+
 
 // Static route to serve uploaded files
 app.use("/uploads", express.static(UPLOAD_FOLDER));
@@ -41,5 +45,5 @@ app.use("/uploads", express.static(UPLOAD_FOLDER));
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 MongoDB connected and ready`);
+  console.log(`📊 PostgreSQL connected and ready`);
 });

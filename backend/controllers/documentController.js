@@ -1,8 +1,10 @@
 const documentProcessor = require("../services/documentProcessor");
-const db = require("../config/database");
-const Document = require("../models/Document");
+const pool = require("../config/database");  // PostgreSQL pool
+const DocumentModel = require("../models/Document"); // PostgreSQL model
 
-// Main document processing endpoint
+// ---------------------------------------------
+// 1. PROCESS DOCUMENT & SAVE TO POSTGRESQL
+// ---------------------------------------------
 const processDocument = async (req, res) => {
   try {
     if (!req.file) {
@@ -12,10 +14,8 @@ const processDocument = async (req, res) => {
       });
     }
 
-    // Process the document through our pipeline
     const result = await documentProcessor.processDocument(req.file);
 
-    // Save complete result to MongoDB
     const documentData = {
       filename: req.file.filename,
       originalname: req.file.originalname,
@@ -35,14 +35,11 @@ const processDocument = async (req, res) => {
       processing_errors: result.errors || [],
     };
 
-    // Save to database
-    const savedDocument = await Document.create(documentData);
-    console.log(`✅ Document saved to database with ID: ${savedDocument._id}`);
+    const savedDocument = await DocumentModel.create(documentData);
 
-    // Return response with database ID
     res.json({
       ...result,
-      document_id: savedDocument._id,
+      document_id: savedDocument.id,
       message: "Document processed and saved successfully",
     });
   } catch (error) {
@@ -54,56 +51,55 @@ const processDocument = async (req, res) => {
   }
 };
 
-// Get all documents with pagination and filtering
+// ---------------------------------------------
+// 2. GET DOCUMENTS WITH PAGINATION + FILTERS
+// ---------------------------------------------
 const getDocuments = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      department,
-      priority,
-      status,
-      search,
-    } = req.query;
+    const { page = 1, limit = 10, department, priority, status, search } = req.query;
 
-    // Build filter query
-    const filter = {};
+    const offset = (page - 1) * limit;
+
+    let query = `SELECT id, filename, originalname, metadata, processing_status, content_analysis, upload_time 
+                 FROM documents WHERE 1=1`;
+    const values = [];
+    let counter = 1;
 
     if (department) {
-      filter["content_analysis.departments"] = department;
+      query += ` AND content_analysis->'departments' ? $${counter++}`;
+      values.push(department);
     }
 
     if (priority) {
-      filter["content_analysis.priority"] = priority;
+      query += ` AND content_analysis->>'priority' = $${counter++}`;
+      values.push(priority);
     }
 
     if (status) {
-      filter["processing_status.overall"] = status;
+      query += ` AND processing_status->>'overall' = $${counter++}`;
+      values.push(status);
     }
 
-    // Text search
     if (search) {
-      filter.$text = { $search: search };
+      query += ` AND search_vector @@ plainto_tsquery($${counter++})`;
+      values.push(search);
     }
 
-    // Execute query with pagination
-    const documents = await Document.find(filter)
-      .select("-extracted_text") // Exclude large text field from list view
-      .sort({ upload_time: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .exec();
+    query += ` ORDER BY upload_time DESC LIMIT $${counter++} OFFSET $${counter}`;
+    values.push(limit, offset);
 
-    const total = await Document.countDocuments(filter);
+    const documents = await pool.query(query, values);
+
+    const total = await pool.query("SELECT COUNT(*) FROM documents");
 
     res.json({
       success: true,
-      documents,
+      documents: documents.rows,
       pagination: {
-        current_page: parseInt(page),
-        total_pages: Math.ceil(total / limit),
-        total_documents: total,
-        has_next: page * limit < total,
+        current_page: Number(page),
+        total_pages: Math.ceil(total.rows[0].count / limit),
+        total_documents: Number(total.rows[0].count),
+        has_next: page * limit < total.rows[0].count,
         has_prev: page > 1,
       },
     });
@@ -116,12 +112,17 @@ const getDocuments = async (req, res) => {
   }
 };
 
-// Get single document by ID
+// ---------------------------------------------
+// 3. GET DOCUMENT BY ID
+// ---------------------------------------------
 const getDocumentById = async (req, res) => {
   try {
-    const document = await Document.findById(req.params.id);
+    const result = await pool.query(
+      "SELECT * FROM documents WHERE id = $1",
+      [req.params.id]
+    );
 
-    if (!document) {
+    if (!result.rows.length) {
       return res.status(404).json({
         success: false,
         error: "Document not found",
@@ -130,7 +131,7 @@ const getDocumentById = async (req, res) => {
 
     res.json({
       success: true,
-      document,
+      document: result.rows[0],
     });
   } catch (error) {
     console.error("Get document by ID error:", error);
@@ -141,12 +142,17 @@ const getDocumentById = async (req, res) => {
   }
 };
 
-// Delete single document by ID
+// ---------------------------------------------
+// 4. DELETE DOCUMENT BY ID
+// ---------------------------------------------
 const deleteDocumentById = async (req, res) => {
   try {
-    const document = await Document.findByIdAndDelete(req.params.id);
+    const result = await pool.query(
+      "DELETE FROM documents WHERE id = $1 RETURNING *",
+      [req.params.id]
+    );
 
-    if (!document) {
+    if (!result.rows.length) {
       return res.status(404).json({
         success: false,
         error: "Document not found",
@@ -166,10 +172,12 @@ const deleteDocumentById = async (req, res) => {
   }
 };
 
-// Search documents
+// ---------------------------------------------
+// 5. SEARCH DOCUMENTS (FULL TEXT SEARCH)
+// ---------------------------------------------
 const searchDocuments = async (req, res) => {
   try {
-    const { q, department, priority, limit = 20 } = req.query;
+    const { q, limit = 20 } = req.query;
 
     if (!q) {
       return res.status(400).json({
@@ -178,30 +186,18 @@ const searchDocuments = async (req, res) => {
       });
     }
 
-    const filter = {
-      $text: { $search: q },
-    };
-
-    if (department) {
-      filter["content_analysis.departments"] = department;
-    }
-
-    if (priority) {
-      filter["content_analysis.priority"] = priority;
-    }
-
-    const documents = await Document.find(filter, {
-      score: { $meta: "textScore" },
-    })
-      .select("-extracted_text")
-      .sort({ score: { $meta: "textScore" } })
-      .limit(parseInt(limit));
+    const results = await pool.query(
+      `SELECT id, filename, originalname, metadata
+       FROM documents
+       WHERE search_vector @@ plainto_tsquery($1)
+       LIMIT $2`,
+      [q, limit]
+    );
 
     res.json({
       success: true,
-      query: q,
-      results: documents.length,
-      documents,
+      results: results.rowCount,
+      documents: results.rows,
     });
   } catch (error) {
     console.error("Search error:", error);
@@ -212,53 +208,38 @@ const searchDocuments = async (req, res) => {
   }
 };
 
-// Get analytics/stats
+// ---------------------------------------------
+// 6. ANALYTICS / DASHBOARD STATS
+// ---------------------------------------------
 const getAnalytics = async (req, res) => {
   try {
-    const analytics = await Document.aggregate([
-      {
-        $group: {
-          _id: null,
-          total_documents: { $sum: 1 },
-          successful_processing: {
-            $sum: {
-              $cond: [{ $eq: ["$processing_status.overall", "success"] }, 1, 0],
-            },
-          },
-          failed_processing: {
-            $sum: {
-              $cond: [{ $eq: ["$processing_status.overall", "failed"] }, 1, 0],
-            },
-          },
-        },
-      },
-    ]);
+    const analytics = await pool.query(`
+      SELECT 
+        COUNT(*) AS total_documents,
+        SUM(CASE WHEN processing_status->>'overall' = 'success' THEN 1 ELSE 0 END) AS successful_processing,
+        SUM(CASE WHEN processing_status->>'overall' = 'failed' THEN 1 ELSE 0 END) AS failed_processing
+      FROM documents;
+    `);
 
-    const departmentStats = await Document.aggregate([
-      { $unwind: "$content_analysis.departments" },
-      {
-        $group: {
-          _id: "$content_analysis.departments",
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { count: -1 } },
-    ]);
+    const departmentStats = await pool.query(`
+      SELECT value AS department, COUNT(*)
+      FROM documents, jsonb_array_elements_text(content_analysis->'departments')
+      GROUP BY value
+      ORDER BY count DESC;
+    `);
 
-    const priorityStats = await Document.aggregate([
-      {
-        $group: {
-          _id: "$content_analysis.priority",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    const priorityStats = await pool.query(`
+      SELECT content_analysis->>'priority' AS priority,
+      COUNT(*) 
+      FROM documents
+      GROUP BY priority;
+    `);
 
     res.json({
       success: true,
-      analytics: analytics[0] || {},
-      department_distribution: departmentStats,
-      priority_distribution: priorityStats,
+      analytics: analytics.rows[0],
+      department_distribution: departmentStats.rows,
+      priority_distribution: priorityStats.rows,
     });
   } catch (error) {
     console.error("Analytics error:", error);
