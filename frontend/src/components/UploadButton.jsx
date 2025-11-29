@@ -35,11 +35,6 @@ const UploadPage = () => {
       return false;
     }
     
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      setMessage("❌ File size too large. Please upload files smaller than 10MB.");
-      return false;
-    }
-    
     return true;
   };
 
