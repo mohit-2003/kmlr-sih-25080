@@ -17,12 +17,15 @@ export async function analyzeDocument(text) {
     console.log("🤖 Sending document to LLM for analysis...");
 
     const prompt = buildAnalysisPrompt(text);
-    const rawResponse = await generate(prompt);
+
+    const { text: rawResponseText, usage } = await generate(prompt);
 
     console.log("📝 LLM response received, parsing...");
 
-    const jsonResult = parseLLMResponse(rawResponse);
+    const jsonResult = parseLLMResponse(rawResponseText);
     const validatedResult = validateAndCleanResult(jsonResult);
+    validatedResult.usage_metadata = usage;
+
     console.log("validatedResult", validatedResult);
 
     console.log("Document analysis completed successfully");

@@ -46,15 +46,11 @@ const Document = sequelize.define(
       type: DataTypes.ENUM(
         "UPLOADED",
         "PREPROCESSING",
-        "PREPROCESSED",
-        "SUMMARIZING",
-        "SUMMARIZED",
-        "ROUTING",
-        "ROUTED",
+        "PROCESSING_OCR",
+        "PROCESSING_LLM",
         "COMPLETED",
         "FAILED",
-        "UNREADABLE",
-        "PARTIALLY_COMPLETED"
+        "UNREADABLE"
       ),
       defaultValue: "UPLOADED",
     },
@@ -70,6 +66,10 @@ const Document = sequelize.define(
     // --- Processing Data ---
     language_detected: {
       type: DataTypes.STRING,
+    },
+    ocr_confidence: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0.0,
     },
     raw_text: {
       type: DataTypes.TEXT, // OCR text, internal use only
@@ -96,6 +96,10 @@ const Document = sequelize.define(
     tags: {
       type: DataTypes.ARRAY(DataTypes.STRING),
     },
+    // Track token usage for cost analysis
+    llm_metadata: {
+      type: DataTypes.JSONB,
+    },
 
     // --- Routing ---
     assigned_departments: {
@@ -110,7 +114,8 @@ const Document = sequelize.define(
   },
   {
     tableName: "documents",
-    timestamps: true, // createdAt & updatedAt
+    timestamps: true,
+    indexes: [{ fields: ["status"] }, { fields: ["uploaded_by"] }],
   }
 );
 

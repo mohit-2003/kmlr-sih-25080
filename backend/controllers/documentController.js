@@ -2,8 +2,10 @@ import documentProcessor from "../services/documentProcessor.js";
 import Document from "../models/Document.js";
 import { Op, fn, col, literal } from "sequelize";
 import { ALLOWED_FILE_EXTENSIONS } from "../services/utils.js";
+import metadataExtractor from "../services/metadataExtractor.js";
 // FIX: Added S3 upload integration to enable saving files to AWS before processing
 import uploadToS3 from "../services/s3Uploader.js";
+
 /**
  * POST /api/documents/process
  * Upload and process a document (OCR + summarization + classification)
@@ -51,94 +53,37 @@ export const processDocument = async (req, res) => {
     req.file.url = s3Result.url;
     console.log("✔ File uploaded to S3:", req.file.url);
 
-    // Step 1: Run pipeline for metadata, ocr, ai etc.
-    const result = await documentProcessor(req.file);
-    console.log("documentProcessor result", result);
+    // 1. Extract Metadata
+    console.log("📊 [Step 1] Extracting metadata...");
+    const metadata = await metadataExtractor.extract(req.file);
 
-    // If LLM failed, this will be undefined, so we default to empty object
-    const analysis = result.data.content_analysis || {};
-    console.log("analysis", analysis);
-    const metadata = result.data.metadata || {};
-    const extractedText = result.data.extracted_text || "";
-
-    let finalStatus = "COMPLETED";
-    let errorStage = result.error_stage || null;
-    let errorMessage = result.error_message || null;
-
-    // 1. Check if the entire process crashed
-    if (result.processing_status.overall === "failed") {
-      finalStatus = "FAILED";
-    }
-    // 2. Check if OCR ran but found no text (common issue with scanned PDFs)
-    else if (
-      result.processing_status.ocr === "success" &&
-      !extractedText.trim()
-    ) {
-      finalStatus = "UNREADABLE"; // New Status
-      errorStage = "ocr_validation";
-      errorMessage =
-        "OCR completed but no text was found. Document may be an image or password protected.";
-    }
-    // 3. Check if OCR worked, but AI Analysis failed (Partial Success)
-    else if (
-      result.processing_status.ocr === "success" &&
-      result.processing_status.llm_analysis === "failed"
-    ) {
-      finalStatus = "PARTIALLY_COMPLETED";
-      // We keep the extracted text, but flag that summary is missing
-      errorMessage =
-        "Text extracted, but AI analysis failed. " +
-        (result.errors[0]?.message || "");
-    }
-
-    // Step 2: Store to DB
+    // 2. Create DB Record (Status: UPLOADED)
     const newDoc = await Document.create({
-      // -- Metadata --
-      file_name: metadata.file_name || req.file.originalname,
-      file_type: metadata.mime_type || req.file.mimetype,
-      file_size: metadata.file_size || req.file.size,
-
-      // Upload info
-      storage_url: req.file.url || "",
-
+      storage_url: req.file.url,
       uploaded_by: employeeId,
-
-      // -- OCR Data --
-      raw_text: extractedText,
-      language_detected: result.data.language || "unknown",
-
-      // -- AI Analysis --
-      priority: analysis.priority || "NORMAL",
-      short_summary_en: analysis.short_summary_en || "",
-      short_summary_ml: analysis.short_summary_ml || "",
-      detailed_summary_en: Array.isArray(analysis.detailed_summary_en)
-        ? analysis.detailed_summary_en
-        : [analysis.detailed_summary_en || ""],
-      detailed_summary_ml: Array.isArray(analysis.detailed_summary_ml)
-        ? analysis.detailed_summary_ml
-        : [analysis.detailed_summary_ml || ""],
-      action_items: analysis.action_items || [],
-      tags: analysis.key_entities || [],
-      assigned_departments: analysis.assigned_departments || [],
-
-      // Status
-      status: finalStatus,
-      error_stage: errorStage,
-      error_message: errorMessage,
-      routed_at: analysis.routed_at || null,
-      completed_at: Date.now(),
+      status: "UPLOADED",
+      ...metadata,
     });
 
-    console.log(`Document saved successfully (ID: ${newDoc.id})`);
+    console.log(
+      `✅ Document ID ${newDoc.id} created. Triggering background processor.`
+    );
 
-    return res.json({
+    // 3. Trigger Background Processing (Fire & Forget)
+    // We pass the ID so the processor knows which record to update.
+    documentProcessor(newDoc.id, req.file).catch((err) => {
+      console.error(`Background worker failed for ID ${newDoc.id}`, err);
+    });
+
+    // 4. Return Immediate Response
+    return res.status(202).json({
       success: true,
       document_id: newDoc.id,
-      message: "Document processed and saved successfully",
-      data: result.data,
+      message: "File uploaded. Processing started in background.",
+      status: "UPLOADED",
     });
   } catch (error) {
-    console.error("Document processing failed:", error);
+    console.error("Document upload failed:", error);
     res.status(500).json({
       success: false,
       error: "Document processing failed",
@@ -220,7 +165,9 @@ export const getDocuments = async (req, res) => {
  */
 export const getDocumentById = async (req, res) => {
   try {
-    const doc = await Document.findByPk(req.params.id);
+    const doc = await Document.findByPk(req.params.id, {
+      attributes: { exclude: ["raw_text"] },
+    });
 
     if (!doc) {
       return res
