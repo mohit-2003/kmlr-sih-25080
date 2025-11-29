@@ -1,6 +1,7 @@
 import documentProcessor from "../services/documentProcessor.js";
 import Document from "../models/Document.js";
 import { Op, fn, col, literal } from "sequelize";
+import { ALLOWED_FILE_EXTENSIONS } from "../services/utils.js";
 // FIX: Added S3 upload integration to enable saving files to AWS before processing
 import uploadToS3 from "../services/s3Uploader.js";
 /**
@@ -13,6 +14,18 @@ export const processDocument = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "No file uploaded",
+      });
+    }
+
+    // ===== File type validation =====
+    const fileExt = req.file.originalname
+      .toLowerCase()
+      .substring(req.file.originalname.lastIndexOf("."));
+
+    if (!ALLOWED_FILE_EXTENSIONS.includes(fileExt)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid file type. Allowed types: pdf, word, txt, images",
       });
     }
 
@@ -38,8 +51,7 @@ export const processDocument = async (req, res) => {
     req.file.url = s3Result.url;
     console.log("✔ File uploaded to S3:", req.file.url);
 
-
-    // Step 1: Run OCR & AI pipeline
+    // Step 1: Run pipeline for metadata, ocr, ai etc.
     const result = await documentProcessor(req.file);
     console.log("documentProcessor result", result);
 
@@ -72,7 +84,7 @@ export const processDocument = async (req, res) => {
       result.processing_status.ocr === "success" &&
       result.processing_status.llm_analysis === "failed"
     ) {
-      finalStatus = "PARTIALLY_COMPLETED"; // New Status
+      finalStatus = "PARTIALLY_COMPLETED";
       // We keep the extracted text, but flag that summary is missing
       errorMessage =
         "Text extracted, but AI analysis failed. " +
@@ -81,21 +93,21 @@ export const processDocument = async (req, res) => {
 
     // Step 2: Store to DB
     const newDoc = await Document.create({
-      // -- Metadata (from result.data.metadata) --
+      // -- Metadata --
       file_name: metadata.file_name || req.file.originalname,
       file_type: metadata.mime_type || req.file.mimetype,
       file_size: metadata.file_size || req.file.size,
 
       // Upload info
-      storage_url: req.file.url || "", 
+      storage_url: req.file.url || "",
 
       uploaded_by: employeeId,
 
-      // -- OCR Data (from result.data) --
+      // -- OCR Data --
       raw_text: extractedText,
       language_detected: result.data.language || "unknown",
 
-      // -- AI Analysis (from result.data.content_analysis) --
+      // -- AI Analysis --
       priority: analysis.priority || "NORMAL",
       short_summary_en: analysis.short_summary_en || "",
       short_summary_ml: analysis.short_summary_ml || "",
@@ -106,7 +118,7 @@ export const processDocument = async (req, res) => {
         ? analysis.detailed_summary_ml
         : [analysis.detailed_summary_ml || ""],
       action_items: analysis.action_items || [],
-      tags: analysis.tags || [],
+      tags: analysis.key_entities || [],
       assigned_departments: analysis.assigned_departments || [],
 
       // Status
@@ -134,8 +146,6 @@ export const processDocument = async (req, res) => {
     });
   }
 };
-
-
 
 /**
  * GET /api/documents
@@ -331,7 +341,6 @@ export const searchDocuments = async (req, res) => {
     });
   }
 };
-
 
 /**
  * GET /api/documents/analytics
