@@ -1,6 +1,7 @@
 import documentProcessor from "../services/documentProcessor.js";
 import Document from "../models/Document.js";
 import { Op, fn, col, literal } from "sequelize";
+// FIX: Added S3 upload integration to enable saving files to AWS before processing
 import uploadToS3 from "../services/s3Uploader.js";
 /**
  * POST /api/documents/process
@@ -28,10 +29,12 @@ export const processDocument = async (req, res) => {
 
     console.log(`📄 Processing uploaded document: ${req.file.originalname}`);
     //  STEP 0 — Upload file to S3
+    // FIX: Introduced S3 upload step to ensure documents are stored and retrievable.
+    // Without this, storage_url remained empty and frontend couldn't display files.
     console.log("📤 Uploading file to S3...");
     const s3Result = await uploadToS3(req.file);
 
-    // Attach S3 URL back to req.file
+    // FIX: Attach S3 file URL to request object so it can be saved in the database.
     req.file.url = s3Result.url;
     console.log("✔ File uploaded to S3:", req.file.url);
 
@@ -80,13 +83,21 @@ export const processDocument = async (req, res) => {
       priorityValue = "NORMAL"; // safe fallback
     }
 
-    // CHANGE 2 — Detailed Summary Normalization (Array safety)
+    // SAFETY FIX: Normalize detailed summary (English) to always be an array.
+    // The LLM sometimes returns a single string instead of an array,
+    // which causes PostgreSQL to throw a type error when inserting into a text[] column.
+    // This logic ensures:
+    //   - If it's already an array → keep it
+    //   - If it's a single value → wrap it in an array
+    //   - If it's null/undefined → use an empty array (safe default)
     const detailedSummaryEn = Array.isArray(analysis.detailed_summary_en)
       ? analysis.detailed_summary_en
       : analysis.detailed_summary_en
       ? [analysis.detailed_summary_en] // convert single value to array
       : [];
 
+      // SAFETY FIX: Same normalization logic for Malayalam summary.
+      // Prevents "invalid input value for enum" and "cannot cast type text to text[]" errors.
     const detailedSummaryMl = Array.isArray(analysis.detailed_summary_ml)
       ? analysis.detailed_summary_ml
       : analysis.detailed_summary_ml
@@ -281,12 +292,12 @@ export const searchDocuments = async (req, res) => {
       });
     }
 
-    // 🔥 CHANGE #1 — Normalize search term for ARRAY operations
+    // CHANGE #1 — Normalize search term for ARRAY operations
     // Postgres ARRAY operators require an array value.
     // So we convert "q" → ["q"] for overlap / contains.
     const arr = [q];
 
-    // 🔥 CHANGE #2 — ARRAY SAFE SEARCH LOGIC
+    // CHANGE #2 — ARRAY SAFE SEARCH LOGIC
     // Your previous code used ILIKE on array columns (BAD)
     // Example: detailed_summary_en ILIKE '%keyword%'
     //
@@ -303,18 +314,18 @@ export const searchDocuments = async (req, res) => {
         { file_name: { [Op.iLike]: `%${q}%` } },
         { short_summary_en: { [Op.iLike]: `%${q}%` } },
 
-        // 🔥 CHANGE #3 — ARRAY field: detailed_summary_en
-        // ❌ Old: ILIKE (broke the search)
-        // ✔ New: overlap (if ANY array element contains q)
+        // CHANGE #3 — ARRAY field: detailed_summary_en
+        //  Old: ILIKE (broke the search)
+        // New: overlap (if ANY array element contains q)
         { detailed_summary_en: { [Op.overlap]: arr } },
 
-        // 🔥 CHANGE #4 — ARRAY field: tags
-        // ✔ Now uses overlap with normalized array input
+        // CHANGE #4 — ARRAY field: tags
+        // Now uses overlap with normalized array input
         { tags: { [Op.overlap]: arr } },
       ],
     };
 
-    // 🔥 CHANGE #5 — Department filter using ARRAY contains
+    // CHANGE #5 — Department filter using ARRAY contains
     // Correct way to match array column
     if (department) {
       where.assigned_departments = { [Op.contains]: [department] };

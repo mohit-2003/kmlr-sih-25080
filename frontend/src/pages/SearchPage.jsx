@@ -1,21 +1,31 @@
 import React, { useState } from "react";
 import axios from "axios";
+// CLEANUP: Removed unused icon imports (Tag, Building2, Calendar) to reduce bundle size.
+// FIX: Added Loader2 icon for showing loading state in the UI.
 import { Search, Brain, Loader2 } from "lucide-react";
 
 const SearchPage = () => {
   const [query, setQuery] = useState("");
+  // NEW STATE: Added states for results, total count, loading flag, and error message.
+  // These states enable better user feedback and structured rendering during search operations.
   const [results, setResults] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSearch = async () => {
+    // FIX: Prevent empty searches from triggering API calls.
     if (!query.trim()) return;
 
+        
+    // UI RESET: Reset loading, error and results before firing new request.
+    // This ensures old results aren't shown while a new search is in progress.
     setLoading(true);
     setError("");
     setResults([]);
 
+    // FIX: Using axios params for cleaner query string generation.
+    // This ensures proper URL encoding and avoids manual string concatenation.
     try {
       const res = await axios.get("http://localhost:5000/api/v1/search", {
         params: {
@@ -23,13 +33,20 @@ const SearchPage = () => {
           limit: 20,
         },
       });
-
+      // SAFETY: Added fallback empty array to prevent UI crashes
+      // if backend returns undefined or malformed payload.
       setResults(res.data.documents || []);
+
+      
+    // SAFETY: Backend returns `results` instead of `total`, so fallback to 0.
       setTotal(res.data.results || 0);
+      // FIX: Added error logging for debugging and user-friendly error message.
+      // Prevents the UI from silently failing when backend errors occur.
     } catch (err) {
       console.error("Search failed:", err);
       setError("Search failed. Try again.");
     } finally {
+      // CLEANUP: Turn off loading state after request completes.
       setLoading(false);
     }
   };
