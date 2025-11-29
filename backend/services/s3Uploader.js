@@ -1,15 +1,12 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
-import path from "path";
-import dotenv from "dotenv";
 
-dotenv.config();
-
+// ⭐ REQUIRED: Create S3 client instance
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    accessKeyId: process.env.AWS_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_KEY,
   },
 });
 
@@ -27,8 +24,10 @@ async function uploadToS3(file) {
 
   await s3.send(new PutObjectCommand(uploadParams));
 
-  // Public URL (because most buckets serve public files)
-  return `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${filename}`;
+  // Return the public URL
+  return {
+    url: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${filename}`
+  };
 }
 
 export default uploadToS3;

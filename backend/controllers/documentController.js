@@ -1,7 +1,7 @@
 import documentProcessor from "../services/documentProcessor.js";
 import Document from "../models/Document.js";
 import { Op, fn, col, literal } from "sequelize";
-
+import uploadToS3 from "../services/s3Uploader.js";
 /**
  * POST /api/documents/process
  * Upload and process a document (OCR + summarization + classification)
@@ -14,6 +14,7 @@ export const processDocument = async (req, res) => {
         error: "No file uploaded",
       });
     }
+
     const employeeId = req.body.employeeId
       ? parseInt(req.body.employeeId)
       : null;
@@ -26,14 +27,20 @@ export const processDocument = async (req, res) => {
     }
 
     console.log(`📄 Processing uploaded document: ${req.file.originalname}`);
+    //  STEP 0 — Upload file to S3
+    console.log("📤 Uploading file to S3...");
+    const s3Result = await uploadToS3(req.file);
+
+    // Attach S3 URL back to req.file
+    req.file.url = s3Result.url;
+    console.log("✔ File uploaded to S3:", req.file.url);
+
 
     // Step 1: Run OCR & AI pipeline
     const result = await documentProcessor(req.file);
     console.log("documentProcessor result", result);
 
-    // If LLM failed, this will be undefined, so we default to empty object
     const analysis = result.data.content_analysis || {};
-    console.log("analysis", analysis);
     const metadata = result.data.metadata || {};
     const extractedText = result.data.extracted_text || "";
 
@@ -41,61 +48,83 @@ export const processDocument = async (req, res) => {
     let errorStage = result.error_stage || null;
     let errorMessage = result.error_message || null;
 
-    // 1. Check if the entire process crashed
+    // --- STATUS NORMALIZATION ---
     if (result.processing_status.overall === "failed") {
       finalStatus = "FAILED";
-    }
-    // 2. Check if OCR ran but found no text (common issue with scanned PDFs)
-    else if (
+    } else if (
       result.processing_status.ocr === "success" &&
       !extractedText.trim()
     ) {
-      finalStatus = "UNREADABLE"; // New Status
+      finalStatus = "UNREADABLE";
       errorStage = "ocr_validation";
       errorMessage =
         "OCR completed but no text was found. Document may be an image or password protected.";
-    }
-    // 3. Check if OCR worked, but AI Analysis failed (Partial Success)
-    else if (
+    } else if (
       result.processing_status.ocr === "success" &&
       result.processing_status.llm_analysis === "failed"
     ) {
-      finalStatus = "PARTIALLY_COMPLETED"; // New Status
-      // We keep the extracted text, but flag that summary is missing
+      finalStatus = "PARTIALLY_COMPLETED";
       errorMessage =
         "Text extracted, but AI analysis failed. " +
         (result.errors[0]?.message || "");
     }
 
-    // Step 2: Store to DB
+    //  CHANGE 1 — Priority Normalization
+    // Prevent ENUM errors like priority="medium" or lowercase values
+    let priorityValue = (analysis.priority || "NORMAL").toUpperCase();
+
+    if (!["LOW", "NORMAL", "HIGH"].includes(priorityValue)) {
+      console.log(
+        `⚠️ Invalid priority received (${analysis.priority}). Defaulting to NORMAL.`
+      );
+      priorityValue = "NORMAL"; // safe fallback
+    }
+
+    // CHANGE 2 — Detailed Summary Normalization (Array safety)
+    const detailedSummaryEn = Array.isArray(analysis.detailed_summary_en)
+      ? analysis.detailed_summary_en
+      : analysis.detailed_summary_en
+      ? [analysis.detailed_summary_en] // convert single value to array
+      : [];
+
+    const detailedSummaryMl = Array.isArray(analysis.detailed_summary_ml)
+      ? analysis.detailed_summary_ml
+      : analysis.detailed_summary_ml
+      ? [analysis.detailed_summary_ml]
+      : [];
+
+    //  CHANGE 3 — Tags and Departments Normalization (Ensure arrays)
+    const tags = Array.isArray(analysis.tags) ? analysis.tags : [];
+    const departments = Array.isArray(analysis.assigned_departments)
+      ? analysis.assigned_departments
+      : [];
+
+    // Step 2: Store in DB safely
     const newDoc = await Document.create({
-      // -- Metadata (from result.data.metadata) --
+      // Metadata
       file_name: metadata.file_name || req.file.originalname,
       file_type: metadata.mime_type || req.file.mimetype,
       file_size: metadata.file_size || req.file.size,
 
-      // -- Upload Info --
-      storage_url: req.file.file_url ?? "",
+      // Upload info
+      storage_url: req.file.url || "", //=> chaged from req.file.url || "",
       uploaded_by: employeeId,
 
-      // -- OCR Data (from result.data) --
+      // OCR Data
       raw_text: extractedText,
       language_detected: result.data.language || "unknown",
 
-      // -- AI Analysis (from result.data.content_analysis) --
-      priority: analysis.priority || "NORMAL",
+      // CHANGE 4 — Replaced raw values with sanitized values
+      priority: priorityValue, // SAFE normalized ENUM
       short_summary_en: analysis.short_summary_en || "",
       short_summary_ml: analysis.short_summary_ml || "",
-      detailed_summary_en: Array.isArray(analysis.detailed_summary_en)
-        ? analysis.detailed_summary_en
-        : [analysis.detailed_summary_en || ""],
-      detailed_summary_ml: Array.isArray(analysis.detailed_summary_ml)
-        ? analysis.detailed_summary_ml
-        : [analysis.detailed_summary_ml || ""],
+      detailed_summary_en: detailedSummaryEn, // SAFE normalized array
+      detailed_summary_ml: detailedSummaryMl,
       action_items: analysis.action_items || [],
-      tags: analysis.tags || [],
-      assigned_departments: analysis.assigned_departments || [],
+      tags: tags, // SAFE normalized array
+      assigned_departments: departments, // SAFE normalized array
 
+      // Status
       status: finalStatus,
       error_stage: errorStage,
       error_message: errorMessage,
@@ -103,7 +132,7 @@ export const processDocument = async (req, res) => {
       completed_at: Date.now(),
     });
 
-    console.log(`Document saved successfully (ID: ${newDoc.id})`);
+    console.log(`✅ Document saved successfully (ID: ${newDoc.id})`);
 
     return res.json({
       success: true,
@@ -112,7 +141,7 @@ export const processDocument = async (req, res) => {
       data: result.data,
     });
   } catch (error) {
-    console.error("Document processing failed:", error);
+    console.error("❌ Document processing failed:", error);
     res.status(500).json({
       success: false,
       error: "Document processing failed",
@@ -120,6 +149,8 @@ export const processDocument = async (req, res) => {
     });
   }
 };
+
+
 
 /**
  * GET /api/documents
@@ -154,7 +185,7 @@ export const getDocuments = async (req, res) => {
       where[Op.or] = [
         { file_name: { [Op.iLike]: `%${search}%` } },
         { short_summary_en: { [Op.iLike]: `%${search}%` } },
-        { detailed_summary_en: { [Op.iLike]: `%${search}%` } },
+        { detailed_summary_en: { [Op.overlap]: [search] } }, //=>using iLike would have caused crash as it is an array
         { tags: { [Op.overlap]: [search] } },
       ];
     }
@@ -242,23 +273,57 @@ export const deleteDocumentById = async (req, res) => {
 export const searchDocuments = async (req, res) => {
   try {
     const { q, department, priority, limit = 20 } = req.query;
-    if (!q)
-      return res
-        .status(400)
-        .json({ success: false, error: "Search query required" });
+
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        error: "Search query required",
+      });
+    }
+
+    // 🔥 CHANGE #1 — Normalize search term for ARRAY operations
+    // Postgres ARRAY operators require an array value.
+    // So we convert "q" → ["q"] for overlap / contains.
+    const arr = [q];
+
+    // 🔥 CHANGE #2 — ARRAY SAFE SEARCH LOGIC
+    // Your previous code used ILIKE on array columns (BAD)
+    // Example: detailed_summary_en ILIKE '%keyword%'
+    //
+    // That caused this error:
+    //    TypeError: values.map is not a function
+    //
+    // Because array fields CANNOT use ILIKE.
+    //
+    // FIX → Use Op.overlap / Op.contains for ARRAY(TEXT) columns.
 
     const where = {
       [Op.or]: [
+        // TEXT fields → still safe to use ILIKE
         { file_name: { [Op.iLike]: `%${q}%` } },
         { short_summary_en: { [Op.iLike]: `%${q}%` } },
-        { detailed_summary_en: { [Op.iLike]: `%${q}%` } },
-        { tags: { [Op.overlap]: [q] } },
+
+        // 🔥 CHANGE #3 — ARRAY field: detailed_summary_en
+        // ❌ Old: ILIKE (broke the search)
+        // ✔ New: overlap (if ANY array element contains q)
+        { detailed_summary_en: { [Op.overlap]: arr } },
+
+        // 🔥 CHANGE #4 — ARRAY field: tags
+        // ✔ Now uses overlap with normalized array input
+        { tags: { [Op.overlap]: arr } },
       ],
     };
 
-    if (department)
+    // 🔥 CHANGE #5 — Department filter using ARRAY contains
+    // Correct way to match array column
+    if (department) {
       where.assigned_departments = { [Op.contains]: [department] };
-    if (priority) where.priority = priority.toUpperCase();
+    }
+
+    // Priority filter (string ENUM)
+    if (priority) {
+      where.priority = priority.toUpperCase();
+    }
 
     const results = await Document.findAll({
       where,
@@ -267,7 +332,7 @@ export const searchDocuments = async (req, res) => {
       attributes: { exclude: ["raw_text"] },
     });
 
-    res.json({
+    return res.json({
       success: true,
       query: q,
       results: results.length,
@@ -275,12 +340,13 @@ export const searchDocuments = async (req, res) => {
     });
   } catch (error) {
     console.error("Search failed:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: "Search failed",
     });
   }
 };
+
 
 /**
  * GET /api/documents/analytics

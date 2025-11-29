@@ -1,86 +1,130 @@
 import React, { useState } from "react";
-import { Search, Brain, Tag, Building2, Calendar } from "lucide-react";
+import axios from "axios";
+import { Search, Brain, Loader2 } from "lucide-react";
 
 const SearchPage = () => {
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+
+    setLoading(true);
+    setError("");
+    setResults([]);
+
+    try {
+      const res = await axios.get("http://localhost:5000/api/v1/search", {
+        params: {
+          q: query,
+          limit: 20,
+        },
+      });
+
+      setResults(res.data.documents || []);
+      setTotal(res.data.results || 0);
+    } catch (err) {
+      console.error("Search failed:", err);
+      setError("Search failed. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Brain className="text-blue-600" />
-        Search Knowledge Repository
-      </h1>
+    <div className="w-full">
 
       {/* Search Bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-        <input
-          type="text"
-          placeholder="Ask me anything... e.g. 'Show HR policies updated in 2025'"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full border rounded-xl pl-10 pr-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-        />
+      <div className="flex items-center gap-3 mb-6 w-full">
+
+        {/* Search icon inside input */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+
+          <input
+            type="text"
+            placeholder="Type something..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full border rounded-xl pl-10 pr-4 py-3 shadow-sm outline-none"
+          />
+        </div>
+
+        {/* Go Button */}
+        <button
+          onClick={handleSearch}
+          className="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700 transition"
+        >
+          Go
+        </button>
       </div>
 
-      {/* Examples / Helper */}
-      {!query && (
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Example 1 */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow hover:shadow-md transition">
-            <div className="flex items-center gap-2 mb-2 text-blue-600 font-semibold">
-              <Building2 size={18} /> Department Search
-            </div>
-            <p className="text-gray-600 text-sm">
-              <em>“Show all Finance documents pending approval”</em>
-            </p>
-          </div>
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center mt-6">
+          <Loader2 size={32} className="animate-spin mx-auto text-blue-600" />
+          <p className="text-gray-500 mt-2">Searching…</p>
+        </div>
+      )}
 
-          {/* Example 2 */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow hover:shadow-md transition">
-            <div className="flex items-center gap-2 mb-2 text-green-600 font-semibold">
-              <Tag size={18} /> Tag Search
-            </div>
-            <p className="text-gray-600 text-sm">
-              <em>“Find #compliance or #audit reports from last quarter”</em>
-            </p>
-          </div>
+      {/* Error */}
+      {error && (
+        <div className="text-red-600 text-center mt-4 font-semibold">
+          {error}
+        </div>
+      )}
 
-          {/* Example 3 */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow hover:shadow-md transition">
-            <div className="flex items-center gap-2 mb-2 text-purple-600 font-semibold">
-              <Calendar size={18} /> Date-based Search
-            </div>
-            <p className="text-gray-600 text-sm">
-              <em>“Documents uploaded in August 2025”</em>
-            </p>
-          </div>
+      {/* Results */}
+      {!loading && results.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">
+            {total} results found for “{query}”
+          </h2>
 
-          {/* Example 4 */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow hover:shadow-md transition">
-            <div className="flex items-center gap-2 mb-2 text-pink-600 font-semibold">
-              <Brain size={18} /> AI Smart Query
-            </div>
-            <p className="text-gray-600 text-sm">
-              <em>“Summarize all vendor contracts expiring this month”</em>
-            </p>
+          <div className="space-y-4">
+            {results.map((doc) => (
+              <div
+                key={doc.id}
+                className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition"
+              >
+                {/* File Name */}
+                <h3 className="text-lg font-semibold">{doc.file_name}</h3>
+
+                {/* Summary */}
+                <p className="text-gray-600 text-sm mt-2">
+                  {doc.short_summary_en || "No summary available"}
+                </p>
+
+                {/* Meta */}
+                <p className="text-xs text-gray-400 mt-2">
+                  {doc.status} • {doc.createdAt?.slice(0, 10)}
+                </p>
+
+                {/* View Document */}
+                {doc.storage_url && (
+                  <button
+                    onClick={() => window.open(doc.storage_url, "_blank")}
+                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg"
+                  >
+                    View Document
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Empty state when query entered */}
-      {query && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-xl p-10 text-center mt-6 shadow-inner">
-          <Brain size={36} className="mx-auto mb-3 text-blue-600" />
-          <p className="text-gray-700 text-lg">
-            Searching with AI for: <br />
-            <span className="font-semibold text-blue-700">“{query}”</span>
-          </p>
-          <p className="text-gray-500 text-sm mt-2">
-            (This is a demo — results will appear here)
-          </p>
+      {/* No Results */}
+      {!loading && query && results.length === 0 && !error && (
+        <div className="text-center mt-8 text-gray-500">
+          No results found.
         </div>
       )}
+
     </div>
   );
 };
