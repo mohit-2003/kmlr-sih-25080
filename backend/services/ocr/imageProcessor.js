@@ -12,14 +12,7 @@ async function processImageFile(file) {
     console.log(`🖼️ Processing image with OCR engine...`);
 
     // 🔹 Use your centralized OCR adapter
-    const {
-      text: rawText,
-      confidence,
-      method,
-    } = await extractText(
-      file.path,
-      "eng+mal" // configurable language pair
-    );
+    const { text: rawText, confidence, method } = await extractText(file.path);
 
     // 🔹 Clean and analyze extracted text
     const cleanedText = cleanExtractedText(rawText);
