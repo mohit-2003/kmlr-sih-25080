@@ -26,6 +26,7 @@ export function initLLM() {
 
 /**
  * Unified generate method
+ * @returns {Promise<{text: string, usage: object}>}
  */
 export async function generate(prompt) {
   if (!activeProvider) {
