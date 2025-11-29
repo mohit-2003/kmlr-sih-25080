@@ -1,43 +1,80 @@
 import Tesseract from "tesseract.js";
+import os from "os";
 
 /**
- * Extract text from an image or PDF page using OCR.
- *
- * Change this file only if you switch OCR libraries (e.g., to PaddleOCR).
- *
- * @param {string} filePath - path to file (image or pdf page)
- * @param {string} lang - language codes supported by OCR (e.g., "eng+mal")
- * @returns {Promise<{ text: string, confidence: number, method: string }>}
+ * @module OCREngine
+ * @description Manages a pool of Tesseract workers to perform OCR tasks efficiently.
+ * Utilizing a scheduler prevents the overhead of re-initializing workers for every page.
  */
-export async function extractText(filePath, lang = "eng") {
-  console.log(`🧠 Using OCR (Tesseract) for file: ${filePath}`);
+
+// 1. Create the Scheduler to manage the worker queue
+const scheduler = Tesseract.createScheduler();
+
+// Track initialization state
+let isSchedulerReady = false;
+
+// Determine worker count: Use 4 or the number of CPU cores, whichever is smaller.
+// This prevents freezing the server CPU on smaller instances.
+const WORKER_COUNT = Math.min(4, os.cpus().length);
+
+/**
+ * Initializes the Tesseract Worker Pool.
+ * Creates workers once and keeps them in memory for reuse.
+ * @returns {Promise<void>}
+ */
+async function initWorkerPool() {
+  if (isSchedulerReady) return;
+
+  console.log(`⚙️ Initializing OCR Worker Pool (${WORKER_COUNT} Workers)...`);
 
   try {
-    const { data } = await Tesseract.recognize(filePath, lang, {
-      logger: (m) => {
-        if (m.status === "recognizing text") {
-          process.stdout.write(
-            `OCR Progress: ${Math.round(m.progress * 100)}%\r`
-          );
-        }
-      },
-    });
+    for (let i = 0; i < WORKER_COUNT; i++) {
+      const worker = await Tesseract.createWorker("eng");
+      scheduler.addWorker(worker);
+    }
 
-    const text = data.text?.trim() || "";
-    const confidence = data.confidence ? data.confidence / 100 : 0.75;
-
-    return {
-      text,
-      confidence: parseFloat(confidence.toFixed(2)),
-      method: "tesseract",
-    };
-  } catch (err) {
-    console.error("❌ OCR extraction failed:", err.message);
-    return {
-      text: "",
-      confidence: 0,
-      method: "tesseract",
-      error: err.message,
-    };
+    isSchedulerReady = true;
+    console.log("✅ OCR Worker Pool Ready.");
+  } catch (error) {
+    console.error("❌ Failed to initialize OCR Worker Pool:", error);
   }
+}
+
+// Initialize immediately on server startup
+initWorkerPool();
+
+/**
+ * Extracts text from an image buffer using the worker pool.
+ *
+ * @param {Buffer} imageBuffer - The raw image buffer (PNG/JPG).
+ * @returns {Promise<{text: string, confidence: number, method: string}>} extracted text and stats.
+ */
+export async function extractText(imageBuffer) {
+  // Defensive check: Ensure pool is ready
+  if (!isSchedulerReady) await initWorkerPool();
+
+  try {
+    // .addJob() automatically routes the task to the next available free worker
+    const {
+      data: { text, confidence },
+    } = await scheduler.addJob("recognize", imageBuffer);
+
+    return {
+      text: text ? text.trim() : "",
+      confidence: confidence,
+      method: "ocr",
+    };
+  } catch (error) {
+    console.error("❌ OCR Job Error:", error);
+    return { text: "", confidence: 0, method: "ocr_failed" };
+  }
+}
+
+/**
+ * Terminates the worker pool.
+ * Useful for graceful shutdowns (e.g., when stopping the server).
+ */
+export async function terminatePool() {
+  console.log("🛑 Terminating OCR Worker Pool...");
+  await scheduler.terminate();
 }
