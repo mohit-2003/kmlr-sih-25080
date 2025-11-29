@@ -1,7 +1,8 @@
 import documentProcessor from "../services/documentProcessor.js";
 import Document from "../models/Document.js";
 import { Op, fn, col, literal } from "sequelize";
-
+// FIX: Added S3 upload integration to enable saving files to AWS before processing
+import uploadToS3 from "../services/s3Uploader.js";
 /**
  * POST /api/documents/process
  * Upload and process a document (OCR + summarization + classification)
@@ -14,6 +15,7 @@ export const processDocument = async (req, res) => {
         error: "No file uploaded",
       });
     }
+
     const employeeId = req.body.employeeId
       ? parseInt(req.body.employeeId)
       : null;
@@ -26,6 +28,16 @@ export const processDocument = async (req, res) => {
     }
 
     console.log(`📄 Processing uploaded document: ${req.file.originalname}`);
+    //  STEP 0 — Upload file to S3
+    // FIX: Introduced S3 upload step to ensure documents are stored and retrievable.
+    // Without this, storage_url remained empty and frontend couldn't display files.
+    console.log("📤 Uploading file to S3...");
+    const s3Result = await uploadToS3(req.file);
+
+    // FIX: Attach S3 file URL to request object so it can be saved in the database.
+    req.file.url = s3Result.url;
+    console.log("✔ File uploaded to S3:", req.file.url);
+
 
     // Step 1: Run OCR & AI pipeline
     const result = await documentProcessor(req.file);
@@ -74,8 +86,9 @@ export const processDocument = async (req, res) => {
       file_type: metadata.mime_type || req.file.mimetype,
       file_size: metadata.file_size || req.file.size,
 
-      // -- Upload Info --
-      storage_url: req.file.file_url ?? "",
+      // Upload info
+      storage_url: req.file.url || "", 
+
       uploaded_by: employeeId,
 
       // -- OCR Data (from result.data) --
@@ -96,6 +109,7 @@ export const processDocument = async (req, res) => {
       tags: analysis.tags || [],
       assigned_departments: analysis.assigned_departments || [],
 
+      // Status
       status: finalStatus,
       error_stage: errorStage,
       error_message: errorMessage,
@@ -120,6 +134,8 @@ export const processDocument = async (req, res) => {
     });
   }
 };
+
+
 
 /**
  * GET /api/documents
@@ -154,7 +170,7 @@ export const getDocuments = async (req, res) => {
       where[Op.or] = [
         { file_name: { [Op.iLike]: `%${search}%` } },
         { short_summary_en: { [Op.iLike]: `%${search}%` } },
-        { detailed_summary_en: { [Op.iLike]: `%${search}%` } },
+        { detailed_summary_en: { [Op.overlap]: [search] } }, //=>using iLike would have caused crash as it is an array
         { tags: { [Op.overlap]: [search] } },
       ];
     }
@@ -242,23 +258,57 @@ export const deleteDocumentById = async (req, res) => {
 export const searchDocuments = async (req, res) => {
   try {
     const { q, department, priority, limit = 20 } = req.query;
-    if (!q)
-      return res
-        .status(400)
-        .json({ success: false, error: "Search query required" });
+
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        error: "Search query required",
+      });
+    }
+
+    // CHANGE #1 — Normalize search term for ARRAY operations
+    // Postgres ARRAY operators require an array value.
+    // So we convert "q" → ["q"] for overlap / contains.
+    const arr = [q];
+
+    // CHANGE #2 — ARRAY SAFE SEARCH LOGIC
+    // Your previous code used ILIKE on array columns (BAD)
+    // Example: detailed_summary_en ILIKE '%keyword%'
+    //
+    // That caused this error:
+    //    TypeError: values.map is not a function
+    //
+    // Because array fields CANNOT use ILIKE.
+    //
+    // FIX → Use Op.overlap / Op.contains for ARRAY(TEXT) columns.
 
     const where = {
       [Op.or]: [
+        // TEXT fields → still safe to use ILIKE
         { file_name: { [Op.iLike]: `%${q}%` } },
         { short_summary_en: { [Op.iLike]: `%${q}%` } },
-        { detailed_summary_en: { [Op.iLike]: `%${q}%` } },
-        { tags: { [Op.overlap]: [q] } },
+
+        // CHANGE #3 — ARRAY field: detailed_summary_en
+        //  Old: ILIKE (broke the search)
+        // New: overlap (if ANY array element contains q)
+        { detailed_summary_en: { [Op.overlap]: arr } },
+
+        // CHANGE #4 — ARRAY field: tags
+        // Now uses overlap with normalized array input
+        { tags: { [Op.overlap]: arr } },
       ],
     };
 
-    if (department)
+    // CHANGE #5 — Department filter using ARRAY contains
+    // Correct way to match array column
+    if (department) {
       where.assigned_departments = { [Op.contains]: [department] };
-    if (priority) where.priority = priority.toUpperCase();
+    }
+
+    // Priority filter (string ENUM)
+    if (priority) {
+      where.priority = priority.toUpperCase();
+    }
 
     const results = await Document.findAll({
       where,
@@ -267,7 +317,7 @@ export const searchDocuments = async (req, res) => {
       attributes: { exclude: ["raw_text"] },
     });
 
-    res.json({
+    return res.json({
       success: true,
       query: q,
       results: results.length,
@@ -275,12 +325,13 @@ export const searchDocuments = async (req, res) => {
     });
   } catch (error) {
     console.error("Search failed:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: "Search failed",
     });
   }
 };
+
 
 /**
  * GET /api/documents/analytics
