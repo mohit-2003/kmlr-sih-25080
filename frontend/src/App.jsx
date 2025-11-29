@@ -10,7 +10,7 @@ import DashboardLayout from "./components/SidebarLayout";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import SearchPage from "./pages/SearchPage";
 import AllDocumentsPage from "./pages/AllDocumentsPage";
-import DepartmentsPage from "./pages/DepartmentsPage";
+import AddEmployeePage from "./pages/AddEmployeePage";
 import LoginPage from "./components/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -36,7 +36,7 @@ function App() {
               <Route path="/document/:id" element={<DocumentDetailPage />} />
               <Route path="/search" element={<SearchPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
-              <Route path="/departments" element={<DepartmentsPage />} />
+              <Route path="/add-employee" element={<AddEmployeePage />} />
             </Route>
           </Routes>
         </div>

@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, FileText, Search, Layers } from "lucide-react";
+import { Home, FileText, Search, Layers, UserPlus } from "lucide-react";
 
 const Sidebar = () => {
   const linkClasses = ({ isActive }) =>
@@ -25,8 +25,9 @@ const Sidebar = () => {
         <NavLink to="/documents" className={linkClasses}>
           <FileText size={18} /> All Documents
         </NavLink>
-        <NavLink to="/departments" className={linkClasses}>
-          <FileText size={18} /> Add Department
+        
+        <NavLink to="/add-employee" className={linkClasses}>
+          <UserPlus size={18} /> Add Employee
         </NavLink>
       </nav>
     </div>
