@@ -5,6 +5,7 @@ import { ALLOWED_FILE_EXTENSIONS } from "../services/utils.js";
 import metadataExtractor from "../services/metadataExtractor.js";
 // FIX: Added S3 upload integration to enable saving files to AWS before processing
 import uploadToS3 from "../services/s3Uploader.js";
+import calculateFileHash from "../utils/calculateFileHash.js";
 
 /**
  * POST /api/documents/process
@@ -43,6 +44,88 @@ export const processDocument = async (req, res) => {
     }
 
     console.log(`📄 Processing uploaded document: ${req.file.originalname}`);
+
+    // Calculate Hash
+    const fileHash = await calculateFileHash(req.file.path);
+
+    // =========================================================
+    // SCENARIO A: SAME USER RE-UPLOADING (Strict De-duplication)
+    // =========================================================
+    const myExistingDoc = await Document.findOne({
+      where: {
+        file_hash: fileHash,
+        uploaded_by: employeeId,
+        status: { [Op.not]: "FAILED" },
+      },
+    });
+
+    if (myExistingDoc) {
+      console.log(
+        `User ${employeeId} already uploaded this file. Returning existing.`
+      );
+      try {
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      } catch (e) {}
+
+      return res.status(200).json({
+        success: true,
+        document_id: myExistingDoc.id,
+        message: "Document already exists. Redirecting...",
+        status: myExistingDoc.status,
+        is_duplicate: true,
+      });
+    }
+
+    // =========================================================
+    // SCENARIO B: GLOBAL DUPLICATE (Clone Data)
+    // =========================================================
+    const globalExistingDoc = await Document.findOne({
+      where: { file_hash: fileHash, status: "COMPLETED" },
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (globalExistingDoc) {
+      console.log("♻️ Duplicate found! Cloning existing analysis...");
+
+      const newDoc = await Document.create({
+        // REUSED S3 URL
+        storage_url: globalExistingDoc.storage_url,
+
+        // COPIED DATA
+        ...globalExistingDoc.toJSON(), // Copies OCR, LLM data
+
+        // OVERRIDES (New Ownership & Metadata)
+        id: undefined, // Ensure new ID is generated
+        createdAt: undefined,
+        updatedAt: undefined,
+        uploaded_by: employeeId,
+        file_name: req.file.originalname,
+        file_type: req.file.mimetype,
+        file_size: req.file.size,
+        file_hash: fileHash,
+
+        // Ensure status is set correctly
+        status: "COMPLETED",
+        completed_at: Date.now(),
+      });
+
+      try {
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      } catch (e) {}
+
+      return res.status(200).json({
+        success: true,
+        document_id: newDoc.id,
+        message: "File recognized. Processed instantly.",
+        status: "COMPLETED",
+        is_duplicate: true,
+      });
+    }
+
+    // =========================================================
+    // SCENARIO C: NEW UPLOAD
+    // =========================================================
+
     //  STEP 0 — Upload file to S3
     // FIX: Introduced S3 upload step to ensure documents are stored and retrievable.
     // Without this, storage_url remained empty and frontend couldn't display files.
@@ -61,6 +144,7 @@ export const processDocument = async (req, res) => {
     const newDoc = await Document.create({
       storage_url: req.file.url,
       uploaded_by: employeeId,
+      file_hash: fileHash,
       status: "UPLOADED",
       ...metadata,
     });
