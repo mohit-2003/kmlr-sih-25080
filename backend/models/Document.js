@@ -15,6 +15,11 @@ const Document = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    // Unique Fingerprint of the file content
+    file_hash: {
+      type: DataTypes.STRING(64), // SHA-256 is always 64 chars
+      allowNull: true,
+    },
     file_type: {
       type: DataTypes.STRING,
       defaultValue: "pdf",

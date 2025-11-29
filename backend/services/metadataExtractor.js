@@ -12,10 +12,6 @@ async function extract(file) {
   }
 
   const stats = fs.statSync(file.path);
-  const fileBuffer = fs.readFileSync(file.path);
-
-  // Compute hash (for deduplication / integrity)
-  const hash = crypto.createHash("sha1").update(fileBuffer).digest("hex");
 
   const metadata = {
     file_name: file.originalname,
@@ -25,10 +21,8 @@ async function extract(file) {
     created_time: stats.birthtime || new Date(),
     modified_time: stats.mtime || new Date(),
     processed_time: new Date(),
-    sha1_hash: hash,
   };
 
-  // Optional: basic validation
   if (!metadata.file_extension) throw new Error("File extension missing");
   if (!metadata.mime_type) throw new Error("MIME type missing");
 
