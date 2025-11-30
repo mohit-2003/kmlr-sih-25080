@@ -33,7 +33,7 @@ function App() {
             }>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/documents" element={<AllDocumentsPage />} />
-              <Route path="/document/:id" element={<DocumentDetailPage />} />
+              <Route path="/documents/:id" element={<DocumentDetailPage />} />
               <Route path="/search" element={<SearchPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/add-employee" element={<AddEmployeePage />} />

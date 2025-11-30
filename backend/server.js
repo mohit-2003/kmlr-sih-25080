@@ -5,7 +5,7 @@ import { connectDB, disconnectDB } from "./config/database.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import { initLLM } from "./services/llm/llmAdapter.js";
 import { terminatePool } from "./services/ocr/ocrEngine.js"; // <--- Import OCR cleanup
-
+import authRoutes from "./routes/authRoutes.js";
 import { PORT } from "./config/constants.js";
 
 dotenv.config();
@@ -29,6 +29,7 @@ try {
 
 // Routes
 app.use("/api/v1", documentRoutes);
+app.use("/api/v1/auth",authRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
