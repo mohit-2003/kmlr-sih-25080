@@ -17,18 +17,17 @@ const AddEmployeePage = () => {
     loginId: "",
     password: "",
     employeeType: "",
-    departments: [],
+    department: "",   // 🔥 changed from array to single value
   });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 🔥 Manager & Viewer removed
   const employeeTypes = [
     { value: "admin", label: "Administrator" },
-    { value: "manager", label: "Manager" },
     { value: "employee", label: "Employee" },
-    { value: "viewer", label: "Viewer" },
   ];
 
   const availableDepartments = [
@@ -44,15 +43,6 @@ const AddEmployeePage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError("");
     setSuccess("");
-  };
-
-  const handleDepartmentChange = (dept) => {
-    setFormData((prev) => ({
-      ...prev,
-      departments: prev.departments.includes(dept)
-        ? prev.departments.filter((d) => d !== dept)
-        : [...prev.departments, dept],
-    }));
   };
 
   const handleSubmit = async (e) => {
@@ -81,8 +71,8 @@ const AddEmployeePage = () => {
       setLoading(false);
       return;
     }
-    if (formData.departments.length === 0) {
-      setError("Select at least one department");
+    if (!formData.department) {
+      setError("Please select a department");
       setLoading(false);
       return;
     }
@@ -93,7 +83,10 @@ const AddEmployeePage = () => {
       const res = await fetch(`${API_BASE}/api/v1/employees`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          departments: [formData.department], // 🔥 API expects array
+        }),
       });
 
       const data = await res.json();
@@ -107,7 +100,7 @@ const AddEmployeePage = () => {
         loginId: "",
         password: "",
         employeeType: "",
-        departments: [],
+        department: "",
       });
 
       setTimeout(() => setSuccess(""), 3000);
@@ -121,18 +114,17 @@ const AddEmployeePage = () => {
   return (
     <div className="space-y-6">
 
-      {/* PAGE HEADER - MATCHES OTHER PAGES */}
+      {/* HEADER */}
       <Card className="p-8">
         <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
           <UserPlus className="text-blue-600" />
           Add Employee
         </h1>
         <p className="text-gray-600">
-          Create a new employee and assign login credentials, type, and departments.
+          Create a new employee and assign login credentials, type, and department.
         </p>
       </Card>
 
-      {/* FORM CONTAINER */}
       <Card className="p-8 max-w-3xl">
         <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -165,7 +157,7 @@ const AddEmployeePage = () => {
             />
           </FormGroup>
 
-          {/* Employee Type */}
+          {/* Employee Type (Dropdown) */}
           <FormGroup label="Employee Type">
             <div className="relative">
               <Briefcase
@@ -189,37 +181,31 @@ const AddEmployeePage = () => {
             </div>
           </FormGroup>
 
-          {/* Departments */}
-          <FormGroup label="Departments">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-gray-600 text-sm">
-                <Building2 size={16} />
-                Select one or more departments
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {/* Department - Single Select Dropdown */}
+          <FormGroup label="Department">
+            <div className="relative">
+              <Building2
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <select
+                name="department"
+                value={formData.department}
+                onChange={handleChange}
+                className="w-full px-4 py-3 pl-10 border rounded-xl focus:ring-2 focus:ring-indigo-500"
+                required
+              >
+                <option value="">Select department</option>
                 {availableDepartments.map((dept) => (
-                  <label
-                    key={dept}
-                    className={`flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition ${
-                      formData.departments.includes(dept)
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.departments.includes(dept)}
-                      onChange={() => handleDepartmentChange(dept)}
-                    />
-                    <span className="text-sm font-medium">{dept}</span>
-                  </label>
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
           </FormGroup>
 
-          {/* Messages */}
+          {/* Error + Success */}
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
               {error}
@@ -231,7 +217,7 @@ const AddEmployeePage = () => {
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Submit */}
           <Button
             type="submit"
             disabled={loading}
@@ -239,16 +225,15 @@ const AddEmployeePage = () => {
           >
             {loading ? (
               <span className="flex items-center gap-2">
-                <UserPlus size={18} />
-                Adding...
+                <UserPlus size={18} /> Adding...
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <UserPlus size={18} />
-                Add Employee
+                <UserPlus size={18} /> Add Employee
               </span>
             )}
           </Button>
+
         </form>
       </Card>
     </div>

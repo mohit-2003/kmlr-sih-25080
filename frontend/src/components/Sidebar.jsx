@@ -23,7 +23,7 @@ const Sidebar = () => {
           <Layers size={18} /> Integrations
         </NavLink>
         <NavLink to="/documents" className={linkClasses}>
-          <FileText size={18} /> All Documents
+          <FileText size={18} /> Upload Docs
         </NavLink>
         
         <NavLink to="/add-employee" className={linkClasses}>
