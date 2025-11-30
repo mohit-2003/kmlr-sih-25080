@@ -60,10 +60,21 @@ function detectLanguage(text) {
   }
 }
 
-module.exports = {
+const ALLOWED_FILE_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".txt",
+  ".png",
+  ".jpg",
+  ".jpeg",
+];
+
+export {
   DEPARTMENTS,
   PRIORITY_LEVELS,
   DOCUMENT_CATEGORIES,
   extractDeadlines,
   detectLanguage,
+  ALLOWED_FILE_EXTENSIONS,
 };

@@ -1,150 +1,127 @@
-const mongoose = require("mongoose");
+import { DataTypes } from "sequelize";
+import { sequelize } from "../config/database.js";
 
-const DocumentSchema = new mongoose.Schema(
+const Document = sequelize.define(
+  "Document",
   {
-    // File information
-    filename: {
-      type: String,
-      required: true,
-    },
-    originalname: {
-      type: String,
-      required: true,
-    },
-    file_path: {
-      type: String,
-      required: true,
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
     },
 
-    // Processing status
-    processing_status: {
-      metadata: {
-        type: String,
-        enum: ["pending", "success", "failed"],
-        default: "pending",
-      },
-      ocr: {
-        type: String,
-        enum: ["pending", "success", "failed", "skipped"],
-        default: "pending",
-      },
-      llm_analysis: {
-        type: String,
-        enum: ["pending", "success", "failed", "partial_failure", "skipped"],
-        default: "pending",
-      },
-      overall: {
-        type: String,
-        enum: ["pending", "success", "partial_success", "failed"],
-        default: "pending",
-      },
+    // --- File Metadata ---
+    file_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    // Unique Fingerprint of the file content
+    file_hash: {
+      type: DataTypes.STRING(64), // SHA-256 is always 64 chars
+      allowNull: true,
+    },
+    file_type: {
+      type: DataTypes.STRING,
+      defaultValue: "pdf",
+    },
+    storage_url: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    uploaded_by: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      // references: {
+      //   model: "users",
+      //   key: "id",
+      // },
+    },
+    file_size: {
+      type: DataTypes.BIGINT,
     },
 
-    // Metadata
-    metadata: {
-      doc_type: String,
-      file_size: Number,
-      created_time: Date,
-      processed_time: {
-        type: Date,
-        default: Date.now,
-      },
-      confidence: Number,
-      language: String,
-      processing_time: Number, // in seconds
+    // --- Priority ---
+    priority: {
+      type: DataTypes.ENUM("LOW", "NORMAL", "HIGH"),
+      defaultValue: "NORMAL",
     },
 
-    // Extracted content
-    extracted_text: {
-      type: String,
-      default: "",
+    // --- Processing Status ---
+    status: {
+      type: DataTypes.ENUM(
+        "UPLOADED",
+        "PREPROCESSING",
+        "PROCESSING_OCR",
+        "PROCESSING_LLM",
+        "COMPLETED",
+        "FAILED",
+        "UNREADABLE"
+      ),
+      defaultValue: "UPLOADED",
+    },
+    error_stage: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    error_message: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
 
-    // Content analysis (from LLM)
-    content_analysis: {
-      title: {
-        type: String,
-        default: "",
-      },
-      purpose: {
-        type: String,
-        default: "",
-      },
-      departments: [
-        {
-          type: String,
-          enum: [
-            "Engineering",
-            "HR",
-            "Finance",
-            "Safety",
-            "Legal",
-            "Procurement",
-            "Operations",
-            "IT",
-            "Administration",
-          ],
-        },
-      ],
-      priority: {
-        type: String,
-        enum: ["low", "medium", "high", "critical"],
-        default: "medium",
-      },
-      deadlines: {
-        type: String,
-        default: "Not applicable",
-      },
-      document_category: {
-        type: String,
-        default: "general",
-      },
-      short_summary: {
-        type: String,
-        default: "",
-      },
-      detailed_summary: [
-        {
-          type: String,
-        },
-      ],
-      key_entities: [
-        {
-          type: String,
-        },
-      ],
+    // --- Processing Data ---
+    language_detected: {
+      type: DataTypes.STRING,
+    },
+    ocr_confidence: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0.0,
+    },
+    raw_text: {
+      type: DataTypes.TEXT, // OCR text, internal use only
     },
 
-    // Processing errors
-    processing_errors: [
-      {
-        type: String,
-      },
-    ],
+    // --- Summaries (Bilingual) ---
+    short_summary_en: {
+      type: DataTypes.TEXT,
+    },
+    short_summary_ml: {
+      type: DataTypes.TEXT,
+    },
+    detailed_summary_en: {
+      type: DataTypes.ARRAY(DataTypes.TEXT),
+    },
+    detailed_summary_ml: {
+      type: DataTypes.ARRAY(DataTypes.TEXT),
+    },
 
-    // Upload timestamp
-    upload_time: {
-      type: Date,
-      default: Date.now,
+    // --- AI Outputs ---
+    action_items: {
+      type: DataTypes.JSONB,
+    },
+    tags: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+    },
+    // Track token usage for cost analysis
+    llm_metadata: {
+      type: DataTypes.JSONB,
+    },
+
+    // --- Routing ---
+    assigned_departments: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+    },
+    routed_at: {
+      type: DataTypes.DATE,
+    },
+    completed_at: {
+      type: DataTypes.DATE,
     },
   },
   {
-    timestamps: true, // adds createdAt and updatedAt
+    tableName: "documents",
+    timestamps: true,
+    indexes: [{ fields: ["status"] }, { fields: ["uploaded_by"] }],
   }
 );
 
-// Create text indexes for searching
-DocumentSchema.index({
-  "content_analysis.title": "text",
-  "content_analysis.short_summary": "text",
-  extracted_text: "text",
-  "content_analysis.key_entities": "text",
-});
-
-// Index for common queries
-DocumentSchema.index({ "content_analysis.departments": 1 });
-DocumentSchema.index({ "content_analysis.priority": 1 });
-DocumentSchema.index({ "processing_status.overall": 1 });
-DocumentSchema.index({ upload_time: -1 });
-
-module.exports = mongoose.model("Document", DocumentSchema);
+export default Document;

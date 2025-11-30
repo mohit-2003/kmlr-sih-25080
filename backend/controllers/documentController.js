@@ -1,9 +1,17 @@
-const documentProcessor = require("../services/documentProcessor");
-const db = require("../config/database");
-const Document = require("../models/Document");
+import documentProcessor from "../services/documentProcessor.js";
+import Document from "../models/Document.js";
+import { Op, fn, col, literal } from "sequelize";
+import { ALLOWED_FILE_EXTENSIONS } from "../services/utils.js";
+import metadataExtractor from "../services/metadataExtractor.js";
+// FIX: Added S3 upload integration to enable saving files to AWS before processing
+import uploadToS3 from "../services/s3Uploader.js";
+import calculateFileHash from "../utils/calculateFileHash.js";
 
-// Main document processing endpoint
-const processDocument = async (req, res) => {
+/**
+ * POST /api/documents/process
+ * Upload and process a document (OCR + summarization + classification)
+ */
+export const processDocument = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -12,50 +20,167 @@ const processDocument = async (req, res) => {
       });
     }
 
-    // Process the document through our pipeline
-    const result = await documentProcessor.processDocument(req.file);
+    // ===== File type validation =====
+    const fileExt = req.file.originalname
+      .toLowerCase()
+      .substring(req.file.originalname.lastIndexOf("."));
 
-    // Save complete result to MongoDB
-    const documentData = {
-      filename: req.file.filename,
-      originalname: req.file.originalname,
-      file_path: req.file.path,
-      processing_status: result.processing_status,
-      metadata: {
-        doc_type: result.data.metadata?.doc_type || "unknown",
-        file_size: result.data.metadata?.file_size || req.file.size,
-        created_time: result.data.metadata?.created_time || new Date(),
-        processed_time: new Date(),
-        confidence: result.data.confidence || 0,
-        language: result.data.language || "unknown",
-        processing_time: result.processing_time || 0,
+    if (!ALLOWED_FILE_EXTENSIONS.includes(fileExt)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid file type. Allowed types: pdf, word, txt, images",
+      });
+    }
+
+    const employeeId = req.body.employeeId
+      ? parseInt(req.body.employeeId)
+      : null;
+
+    if (!employeeId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing employeeId in form data",
+      });
+    }
+
+    console.log(`📄 Processing uploaded document: ${req.file.originalname}`);
+
+    // Calculate Hash
+    const fileHash = await calculateFileHash(req.file.path);
+
+    // =========================================================
+    // SCENARIO A: SAME USER RE-UPLOADING (Strict De-duplication)
+    // =========================================================
+    const myExistingDoc = await Document.findOne({
+      where: {
+        file_hash: fileHash,
+        uploaded_by: employeeId,
+        status: { [Op.not]: "FAILED" },
       },
-      extracted_text: result.data.extracted_text || "",
-      content_analysis: result.data.content_analysis || {},
-      processing_errors: result.errors || [],
-    };
+    });
 
-    // Save to database
-    const savedDocument = await Document.create(documentData);
-    console.log(`✅ Document saved to database with ID: ${savedDocument._id}`);
+    if (myExistingDoc) {
+      console.log(
+        `User ${employeeId} already uploaded this file. Returning existing.`
+      );
+      try {
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      } catch (e) {}
 
-    // Return response with database ID
-    res.json({
-      ...result,
-      document_id: savedDocument._id,
-      message: "Document processed and saved successfully",
+      return res.status(200).json({
+        success: true,
+        document_id: myExistingDoc.id,
+        message: "Document already exists. Redirecting...",
+        status: myExistingDoc.status,
+        is_duplicate: true,
+      });
+    }
+
+    // =========================================================
+    // SCENARIO B: GLOBAL DUPLICATE (Clone Data)
+    // =========================================================
+    const globalExistingDoc = await Document.findOne({
+      where: { file_hash: fileHash, status: "COMPLETED" },
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (globalExistingDoc) {
+      console.log("♻️ Duplicate found! Cloning existing analysis...");
+
+      const newDoc = await Document.create({
+        // REUSED S3 URL
+        storage_url: globalExistingDoc.storage_url,
+
+        // COPIED DATA
+        ...globalExistingDoc.toJSON(), // Copies OCR, LLM data
+
+        // OVERRIDES (New Ownership & Metadata)
+        id: undefined, // Ensure new ID is generated
+        createdAt: undefined,
+        updatedAt: undefined,
+        uploaded_by: employeeId,
+        file_name: req.file.originalname,
+        file_type: req.file.mimetype,
+        file_size: req.file.size,
+        file_hash: fileHash,
+
+        // Ensure status is set correctly
+        status: "COMPLETED",
+        completed_at: Date.now(),
+      });
+
+      try {
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      } catch (e) {}
+
+      return res.status(200).json({
+        success: true,
+        document_id: newDoc.id,
+        message: "File recognized. Processed instantly.",
+        status: "COMPLETED",
+        is_duplicate: true,
+      });
+    }
+
+    // =========================================================
+    // SCENARIO C: NEW UPLOAD
+    // =========================================================
+
+    //  STEP 0 — Upload file to S3
+    // FIX: Introduced S3 upload step to ensure documents are stored and retrievable.
+    // Without this, storage_url remained empty and frontend couldn't display files.
+    console.log("📤 Uploading file to S3...");
+    const s3Result = await uploadToS3(req.file);
+
+    // FIX: Attach S3 file URL to request object so it can be saved in the database.
+    req.file.url = s3Result.url;
+    console.log("✔ File uploaded to S3:", req.file.url);
+
+    // 1. Extract Metadata
+    console.log("📊 [Step 1] Extracting metadata...");
+    const metadata = await metadataExtractor.extract(req.file);
+
+    // 2. Create DB Record (Status: UPLOADED)
+    const newDoc = await Document.create({
+      storage_url: req.file.url,
+      uploaded_by: employeeId,
+      file_hash: fileHash,
+      status: "UPLOADED",
+      ...metadata,
+    });
+
+    console.log(
+      `✅ Document ID ${newDoc.id} created. Triggering background processor.`
+    );
+
+    // 3. Trigger Background Processing (Fire & Forget)
+    // We pass the ID so the processor knows which record to update.
+    documentProcessor(newDoc.id, req.file).catch((err) => {
+      console.error(`Background worker failed for ID ${newDoc.id}`, err);
+    });
+
+    // 4. Return Immediate Response
+    return res.status(202).json({
+      success: true,
+      document_id: newDoc.id,
+      message: "File uploaded. Processing started in background.",
+      status: "UPLOADED",
     });
   } catch (error) {
-    console.error("Processing error:", error);
+    console.error("Document upload failed:", error);
     res.status(500).json({
       success: false,
       error: "Document processing failed",
+      details: error.message,
     });
   }
 };
 
-// Get all documents with pagination and filtering
-const getDocuments = async (req, res) => {
+/**
+ * GET /api/documents
+ * Paginated list of documents with filters
+ */
+export const getDocuments = async (req, res) => {
   try {
     const {
       page = 1,
@@ -66,49 +191,52 @@ const getDocuments = async (req, res) => {
       search,
     } = req.query;
 
-    // Build filter query
-    const filter = {};
+    const where = {};
 
     if (department) {
-      filter["content_analysis.departments"] = department;
+      where.assigned_departments = { [Op.contains]: [department] }; // ARRAY contains
     }
 
     if (priority) {
-      filter["content_analysis.priority"] = priority;
+      where.priority = priority.toUpperCase();
     }
 
     if (status) {
-      filter["processing_status.overall"] = status;
+      where.status = status.toUpperCase();
     }
 
-    // Text search
     if (search) {
-      filter.$text = { $search: search };
+      where[Op.or] = [
+        { file_name: { [Op.iLike]: `%${search}%` } },
+        { short_summary_en: { [Op.iLike]: `%${search}%` } },
+        { detailed_summary_en: { [Op.overlap]: [search] } }, //=>using iLike would have caused crash as it is an array
+        { tags: { [Op.overlap]: [search] } },
+      ];
     }
 
-    // Execute query with pagination
-    const documents = await Document.find(filter)
-      .select("-extracted_text") // Exclude large text field from list view
-      .sort({ upload_time: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .exec();
+    const offset = (page - 1) * limit;
 
-    const total = await Document.countDocuments(filter);
+    const { rows, count } = await Document.findAndCountAll({
+      where,
+      order: [["createdAt", "DESC"]],
+      limit: parseInt(limit),
+      offset,
+      attributes: { exclude: ["raw_text"] },
+    });
 
     res.json({
       success: true,
-      documents,
+      documents: rows,
       pagination: {
         current_page: parseInt(page),
-        total_pages: Math.ceil(total / limit),
-        total_documents: total,
-        has_next: page * limit < total,
+        total_pages: Math.ceil(count / limit),
+        total_documents: count,
+        has_next: page * limit < count,
         has_prev: page > 1,
       },
     });
   } catch (error) {
-    console.error("Get documents error:", error);
+    console.error("Get documents failed:", error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch documents",
@@ -116,24 +244,24 @@ const getDocuments = async (req, res) => {
   }
 };
 
-// Get single document by ID
-const getDocumentById = async (req, res) => {
+/**
+ * GET /api/documents/:id
+ */
+export const getDocumentById = async (req, res) => {
   try {
-    const document = await Document.findById(req.params.id);
+    const doc = await Document.findByPk(req.params.id, {
+      attributes: { exclude: ["raw_text"] },
+    });
 
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        error: "Document not found",
-      });
+    if (!doc) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Document not found" });
     }
 
-    res.json({
-      success: true,
-      document,
-    });
+    res.json({ success: true, document: doc });
   } catch (error) {
-    console.error("Get document by ID error:", error);
+    console.error("Get document by ID failed:", error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch document",
@@ -141,24 +269,22 @@ const getDocumentById = async (req, res) => {
   }
 };
 
-// Delete single document by ID
-const deleteDocumentById = async (req, res) => {
+/**
+ * DELETE /api/documents/:id
+ */
+export const deleteDocumentById = async (req, res) => {
   try {
-    const document = await Document.findByIdAndDelete(req.params.id);
+    const deleted = await Document.destroy({ where: { id: req.params.id } });
 
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        error: "Document not found",
-      });
+    if (!deleted) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Document not found" });
     }
 
-    res.json({
-      success: true,
-      message: "Document deleted successfully",
-    });
+    res.json({ success: true, message: "Document deleted successfully" });
   } catch (error) {
-    console.error("Delete document by ID error:", error);
+    console.error("Delete document failed:", error);
     res.status(500).json({
       success: false,
       error: "Failed to delete document",
@@ -166,114 +292,126 @@ const deleteDocumentById = async (req, res) => {
   }
 };
 
-// Search documents
-const searchDocuments = async (req, res) => {
+/**
+ * GET /api/documents/search?q=
+ * Full-text search + filters
+ */
+export const searchDocuments = async (req, res) => {
   try {
     const { q, department, priority, limit = 20 } = req.query;
 
     if (!q) {
       return res.status(400).json({
         success: false,
-        error: "Search query is required",
+        error: "Search query required",
       });
     }
 
-    const filter = {
-      $text: { $search: q },
+    // CHANGE #1 — Normalize search term for ARRAY operations
+    // Postgres ARRAY operators require an array value.
+    // So we convert "q" → ["q"] for overlap / contains.
+    const arr = [q];
+
+    // CHANGE #2 — ARRAY SAFE SEARCH LOGIC
+    // Your previous code used ILIKE on array columns (BAD)
+    // Example: detailed_summary_en ILIKE '%keyword%'
+    //
+    // That caused this error:
+    //    TypeError: values.map is not a function
+    //
+    // Because array fields CANNOT use ILIKE.
+    //
+    // FIX → Use Op.overlap / Op.contains for ARRAY(TEXT) columns.
+
+    const where = {
+      [Op.or]: [
+        // TEXT fields → still safe to use ILIKE
+        { file_name: { [Op.iLike]: `%${q}%` } },
+        { short_summary_en: { [Op.iLike]: `%${q}%` } },
+
+        // CHANGE #3 — ARRAY field: detailed_summary_en
+        //  Old: ILIKE (broke the search)
+        // New: overlap (if ANY array element contains q)
+        { detailed_summary_en: { [Op.overlap]: arr } },
+
+        // CHANGE #4 — ARRAY field: tags
+        // Now uses overlap with normalized array input
+        { tags: { [Op.overlap]: arr } },
+      ],
     };
 
+    // CHANGE #5 — Department filter using ARRAY contains
+    // Correct way to match array column
     if (department) {
-      filter["content_analysis.departments"] = department;
+      where.assigned_departments = { [Op.contains]: [department] };
     }
 
+    // Priority filter (string ENUM)
     if (priority) {
-      filter["content_analysis.priority"] = priority;
+      where.priority = priority.toUpperCase();
     }
 
-    const documents = await Document.find(filter, {
-      score: { $meta: "textScore" },
-    })
-      .select("-extracted_text")
-      .sort({ score: { $meta: "textScore" } })
-      .limit(parseInt(limit));
+    const results = await Document.findAll({
+      where,
+      limit: parseInt(limit),
+      order: [["updatedAt", "DESC"]],
+      attributes: { exclude: ["raw_text"] },
+    });
 
-    res.json({
+    return res.json({
       success: true,
       query: q,
-      results: documents.length,
-      documents,
+      results: results.length,
+      documents: results,
     });
   } catch (error) {
-    console.error("Search error:", error);
-    res.status(500).json({
+    console.error("Search failed:", error);
+    return res.status(500).json({
       success: false,
       error: "Search failed",
     });
   }
 };
 
-// Get analytics/stats
-const getAnalytics = async (req, res) => {
+/**
+ * GET /api/documents/analytics
+ */
+export const getAnalytics = async (req, res) => {
   try {
-    const analytics = await Document.aggregate([
-      {
-        $group: {
-          _id: null,
-          total_documents: { $sum: 1 },
-          successful_processing: {
-            $sum: {
-              $cond: [{ $eq: ["$processing_status.overall", "success"] }, 1, 0],
-            },
-          },
-          failed_processing: {
-            $sum: {
-              $cond: [{ $eq: ["$processing_status.overall", "failed"] }, 1, 0],
-            },
-          },
-        },
-      },
-    ]);
+    const totalDocs = await Document.count();
 
-    const departmentStats = await Document.aggregate([
-      { $unwind: "$content_analysis.departments" },
-      {
-        $group: {
-          _id: "$content_analysis.departments",
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { count: -1 } },
-    ]);
+    const statusCounts = await Document.findAll({
+      attributes: ["status", [fn("COUNT", col("status")), "count"]],
+      group: ["status"],
+    });
 
-    const priorityStats = await Document.aggregate([
-      {
-        $group: {
-          _id: "$content_analysis.priority",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    const priorityCounts = await Document.findAll({
+      attributes: ["priority", [fn("COUNT", col("priority")), "count"]],
+      group: ["priority"],
+    });
+
+    const deptCounts = await Document.findAll({
+      attributes: [
+        [literal("unnest(assigned_departments)"), "department"],
+        [fn("COUNT", literal("unnest(assigned_departments)")), "count"],
+      ],
+      group: ["department"],
+    });
 
     res.json({
       success: true,
-      analytics: analytics[0] || {},
-      department_distribution: departmentStats,
-      priority_distribution: priorityStats,
+      analytics: {
+        total_documents: totalDocs,
+        status_distribution: statusCounts,
+        priority_distribution: priorityCounts,
+        department_distribution: deptCounts,
+      },
     });
   } catch (error) {
-    console.error("Analytics error:", error);
+    console.error("Analytics failed:", error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch analytics",
     });
   }
-};
-
-module.exports = {
-  processDocument,
-  getDocuments,
-  getDocumentById,
-  deleteDocumentById,
-  searchDocuments,
-  getAnalytics,
 };

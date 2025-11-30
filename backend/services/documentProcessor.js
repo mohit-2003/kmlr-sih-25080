@@ -1,83 +1,110 @@
-const metadataExtractor = require("./metadataExtractor");
-const ocrProcessor = require("./ocrProcessor");
-const geminiService = require("./geminiService");
+import ocrService from "./ocr/index.js";
+import { analyzeDocument } from "./llm/documentAnalyzer.js";
+import Document from "../models/Document.js";
+import fs from "fs";
 
-async function processDocument(file) {
-  const startTime = Date.now();
-  const result = {
-    success: true,
-    processing_status: {
-      metadata: "pending",
-      ocr: "pending",
-      llm_analysis: "pending",
-      overall: "pending",
-    },
-    data: {},
-    errors: [],
-  };
+/**
+ * Background Pipeline.
+ * Updates the database after every step.
+ */
+async function processDocument(docId, file) {
+  console.log(`⚙️ Pipeline Started for Doc ID: ${docId}`);
 
   try {
-    // Step 1: Extract basic metadata
-    console.log("📊 Extracting metadata...");
-    result.data.metadata = await metadataExtractor.extract(file);
-    result.processing_status.metadata = "success";
-    console.log("✅ Metadata extracted");
-  } catch (error) {
-    console.error("❌ Metadata extraction failed:", error);
-    result.processing_status.metadata = "failed";
-    result.errors.push("Metadata extraction failed");
-  }
-
-  try {
+    // -----------------------------
     // Step 2: OCR Processing
-    console.log("🔍 Processing OCR...");
-    const ocrResult = await ocrProcessor.process(file);
-    result.data.extracted_text = ocrResult.text;
-    result.data.confidence = ocrResult.confidence;
-    result.data.language = ocrResult.language;
-    result.processing_status.ocr = "success";
-    console.log("✅ OCR completed");
-  } catch (error) {
-    console.error("❌ OCR processing failed:", error);
-    result.processing_status.ocr = "failed";
-    result.errors.push("OCR processing failed");
-  }
+    // -----------------------------
+    await Document.update(
+      { status: "PROCESSING_OCR" },
+      { where: { id: docId } }
+    );
+    console.log("🔍 [Step 2] Running OCR service...");
 
-  try {
-    // Step 3: LLM Analysis (only if we have text)
-    if (result.data.extracted_text) {
-      console.log("🤖 Running AI analysis...");
-      result.data.content_analysis = await geminiService.analyzeDocument(
-        result.data.extracted_text
+    const ocrResult = await ocrService(file);
+    const extractedText = ocrResult.text || "";
+
+    // Validation
+    if (!extractedText.trim()) {
+      await Document.update(
+        {
+          status: "UNREADABLE",
+          error_message: "OCR finished but no text found.",
+          error_stage: "ocr",
+        },
+        { where: { id: docId } }
       );
-      result.processing_status.llm_analysis = "success";
-      console.log("✅ AI analysis completed");
-    } else {
-      result.processing_status.llm_analysis = "skipped";
-      result.errors.push("No text available for AI analysis");
+      return; // Stop pipeline
     }
+
+    // SAVE OCR RESULTS TO DB
+    await Document.update(
+      {
+        raw_text: extractedText,
+        language_detected: ocrResult.language || "unknown",
+        ocr_confidence: ocrResult.confidence || 0,
+        status: "SUMMARIZING", // Mark Step 2 complete, moving to LLM
+      },
+      { where: { id: docId } }
+    );
+
+    console.log("✅ OCR text saved to DB.");
+
+    // -----------------------------
+    // Step 3: LLM Analysis
+    // -----------------------------
+    console.log("🤖 [Step 3] Running AI analysis...");
+    const analysis = await analyzeDocument(extractedText);
+
+    // SAVE FINAL RESULTS TO DB
+    await Document.update(
+      {
+        status: "COMPLETED",
+        completed_at: Date.now(),
+
+        // AI Fields
+        priority: analysis.priority || "NORMAL",
+        short_summary_en: analysis.short_summary_en || "",
+        short_summary_ml: analysis.short_summary_ml || "",
+
+        detailed_summary_en: Array.isArray(analysis.detailed_summary_en)
+          ? analysis.detailed_summary_en
+          : [analysis.detailed_summary_en || ""],
+        detailed_summary_ml: Array.isArray(analysis.detailed_summary_ml)
+          ? analysis.detailed_summary_ml
+          : [analysis.detailed_summary_ml || ""],
+
+        action_items: analysis.action_items || [],
+        tags: analysis.key_entities || [],
+        assigned_departments: analysis.assigned_departments || [],
+        routed_at: analysis.routed_at || null,
+
+        // Save token usage if available
+        llm_metadata: analysis.usage_metadata || {},
+      },
+      { where: { id: docId } }
+    );
+
+    console.log(`🎉 Pipeline successfully completed for Doc ID: ${docId}`);
   } catch (error) {
-    console.error("❌ LLM analysis failed:", error);
-    result.processing_status.llm_analysis = "failed";
-    result.errors.push("AI analysis failed");
+    console.error(`❌ Pipeline failed for Doc ID: ${docId}`, error);
+
+    // Update DB with Failure
+    await Document.update(
+      {
+        status: "FAILED",
+        error_message: error.message,
+        error_stage: "background_processing",
+      },
+      { where: { id: docId } }
+    );
+  } finally {
+    // Cleanup local file
+    try {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+    } catch (e) {
+      /* ignore */
+    }
   }
-
-  // Final status
-  const hasErrors = result.errors.length > 0;
-  const hasSuccesses = Object.values(result.processing_status).some(
-    (status) => status === "success"
-  );
-
-  result.processing_status.overall = hasErrors
-    ? hasSuccesses
-      ? "partial_success"
-      : "failed"
-    : "success";
-  result.processing_time = (Date.now() - startTime) / 1000;
-
-  return result;
 }
 
-module.exports = {
-  processDocument,
-};
+export default processDocument;
