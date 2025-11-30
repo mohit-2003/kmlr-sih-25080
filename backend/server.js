@@ -5,7 +5,7 @@ import { connectDB, disconnectDB } from "./config/database.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import { initLLM } from "./services/llm/llmAdapter.js";
 import { terminatePool } from "./services/ocr/ocrEngine.js"; // <--- Import OCR cleanup
-
+import authRoutes from "./routes/authRoutes.js"
 import { PORT } from "./config/constants.js";
 
 dotenv.config();
@@ -20,15 +20,16 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize LLM
-try {
-  initLLM();
-  console.log("✨ LLM client initialized");
-} catch (err) {
-  console.error("❌ LLM init error:", err.message);
-}
+// try {
+//   initLLM();
+//   console.log("✨ LLM client initialized");
+// } catch (err) {
+//   console.error("❌ LLM init error:", err.message);
+// }
 
 // Routes
 app.use("/api/v1", documentRoutes);
+app.use("/api/auth",authRoutes );
 
 // Global Error Handler
 app.use((err, req, res, next) => {
