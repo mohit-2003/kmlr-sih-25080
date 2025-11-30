@@ -45,6 +45,15 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    reset_otp: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+reset_otp_expiry: {
+  type: DataTypes.DATE,
+  allowNull: true,
+},
+
   },
   {
     tableName: "users",
