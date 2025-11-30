@@ -10,7 +10,7 @@ const Document = sequelize.define(
       autoIncrement: true,
     },
 
-    // --- File Metadata ---
+    // -- File Metadata --
     file_name: {
       type: DataTypes.STRING,
       allowNull: false,
