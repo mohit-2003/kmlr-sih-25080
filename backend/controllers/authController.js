@@ -16,3 +16,18 @@ export const register = async (req, res) => {
     });
   }
 };
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const { user, token } = await AuthService.loginUser(email, password);
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      user,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
