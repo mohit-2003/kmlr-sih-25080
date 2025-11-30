@@ -1,8 +1,15 @@
 // src/components/ui/card.jsx
-export default function Card({ children, className }) {
+export default function Card({ children, className = "", ...props }) {
   return (
-    <div className={`bg-white shadow-xl rounded-2xl border border-gray-100 p-10 ${className}`}>
+    <div
+      {...props}
+      className={`bg-white shadow-xl rounded-2xl border border-gray-100 ${className}`}
+    >
       {children}
     </div>
   );
 }
+
+
+
+
