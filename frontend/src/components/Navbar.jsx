@@ -19,8 +19,11 @@ const Navbar = () => {
   return (
     <nav className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-blue-800 to-blue-600 text-white sticky top-0 z-50 shadow-lg">
 
-      {/* Left Side Logo */}
-      <div className="flex items-center">
+      {/* Left Side Logo (CLICKABLE → GO TO HOME) */}
+      <div
+        className="flex items-center cursor-pointer"
+        onClick={() => navigate("/")}
+      >
         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-blue-800 font-bold mr-3">
           🚉
         </div>
@@ -69,10 +72,10 @@ const Navbar = () => {
               Dashboard
             </Link>
 
-            {/* Logout Button */}
+            {/* Logout */}
             <Button
               onClick={handleLogout}
-              className="w-auto !py-2 !px-4 bg-white/20 text-white hover:bg-white/30 border border-white/20"
+              className="w-auto !py-2 !px-4 bg-white/20 text-white hover:bg-white/30 border border-white/20 cursor-pointer"
             >
               Logout
             </Button>
