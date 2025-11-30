@@ -20,16 +20,16 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize LLM
-// try {
-//   initLLM();
-//   console.log("✨ LLM client initialized");
-// } catch (err) {
-//   console.error("❌ LLM init error:", err.message);
-// }
+try {
+  initLLM();
+  console.log("✨ LLM client initialized");
+} catch (err) {
+  console.error("❌ LLM init error:", err.message);
+}
 
 // Routes
 app.use("/api/v1", documentRoutes);
-app.use("/api/auth",authRoutes );
+app.use("/api/v1/auth",authRoutes );
 
 // Global Error Handler
 app.use((err, req, res, next) => {
