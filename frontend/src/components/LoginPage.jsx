@@ -52,11 +52,9 @@ const LoginPage = () => {
             //Save JWT token for authenticated API calls
             localStorage.setItem("token", data.token);
 
-            // Saving name + role in AuthContext
-            login(data.user.role, data.user.name);
+            // Saving name + role + department id in AuthContext
+            login(data.user.role, data.user.name, data.user.department_id);
 
-            // Saving name in localStorage for persistence
-            localStorage.setItem("name", data.user.name);
 
             // Redirect to dashboard
             navigate("/dashboard");
