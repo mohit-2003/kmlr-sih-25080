@@ -1,5 +1,6 @@
 import documentProcessor from "../services/documentProcessor.js";
 import Document from "../models/Document.js";
+import Department from "../models/Department.js";
 import { Op, fn, col, literal } from "sequelize";
 import { ALLOWED_FILE_EXTENSIONS } from "../services/utils.js";
 import metadataExtractor from "../services/metadataExtractor.js";
@@ -259,7 +260,22 @@ export const getDocumentById = async (req, res) => {
         .json({ success: false, error: "Document not found" });
     }
 
-    res.json({ success: true, document: doc });
+    // 1. Get IDs from document
+    const departmentIds = doc.assigned_departments || [];
+
+    // 2. Fetch Department Names
+    const departments = await Department.findAll({
+      where: { id: departmentIds },
+      attributes: ["name"], // We only need the name
+    });
+
+    // 3. Convert doc to JSON and replace IDs with Names array
+    const documentData = doc.toJSON();
+
+    // Maps to: ["Metro Operations", "Safety & Security"]
+    documentData.assigned_departments = departments.map((d) => d.name);
+
+    res.json({ success: true, document: documentData });
   } catch (error) {
     console.error("Get document by ID failed:", error);
     res.status(500).json({
