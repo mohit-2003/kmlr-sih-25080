@@ -350,11 +350,11 @@ const AllDocumentsPage = () => {
         )?.documents || [];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full max-w-7xl mx-auto space-y-6">
       
       {/* HEADER */}
-      <Card className="p-8">
-        <div className="flex justify-between items-center">
+      <Card className="p-6 sm:p-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Documents
@@ -394,11 +394,11 @@ const AllDocumentsPage = () => {
       </Card>
 
       {/* GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
 
         {/* MAIN AREA */}
-        <div className="lg:col-span-3 space-y-6">
-          <Card className="p-8">
+        <div className="xl:col-span-3 space-y-6">
+          <Card className="p-6 sm:p-8">
 
             {/* FILTER BUTTONS */}
             {/* <div className="flex gap-3 mb-6">
@@ -434,7 +434,7 @@ const AllDocumentsPage = () => {
 
             {/* DRAG & DROP */}
             <div
-              className={`p-10 border-2 border-dashed rounded-xl text-center cursor-pointer transition ${
+              className={`p-6 sm:p-10 border-2 border-dashed rounded-xl text-center cursor-pointer transition ${
                 isDragging
                   ? "bg-green-50 border-green-400"
                   : "bg-gray-50 border-gray-300"
@@ -602,7 +602,7 @@ const AllDocumentsPage = () => {
         </div>
 
         {/* RIGHT SIDEBAR */}
-        <Card className="p-8">
+        <Card className="p-6 sm:p-8">
           <h3 className="font-semibold text-lg mb-5">
             Recent Activity
           </h3>
