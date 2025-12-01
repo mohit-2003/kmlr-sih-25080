@@ -3,6 +3,8 @@ import { Building2, Plus } from "lucide-react";
 import Button from "./ui/button";
 import InputField from "./ui/input"; // make sure filename matches your input component
 import Card from "./ui/card";
+import { useAuth } from "../context/AuthContext";
+
 
 const DepartmentsPage = () => {
   const [departments, setDepartments] = useState([
@@ -13,6 +15,10 @@ const DepartmentsPage = () => {
     "Legal",
     "Procurement",
   ]);
+
+  const { role } = useAuth();
+
+
   const [newDept, setNewDept] = useState("");
 
   const handleAddDepartment = (e) => {

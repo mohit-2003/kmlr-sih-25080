@@ -1,8 +1,11 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { Home, FileText, Search, Layers, UserPlus, X } from "lucide-react";
 
 const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
+  //storing role to later use
+  const { role } = useAuth();
   const linkClasses = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
       isActive
@@ -39,10 +42,12 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
         <NavLink to="/documents" className={linkClasses} onClick={onClose}>
           <FileText size={18} /> Upload Docs
         </NavLink>
-
-        <NavLink to="/add-employee" className={linkClasses} onClick={onClose}>
-          <UserPlus size={18} /> Add Employee
-        </NavLink>
+        {/* making sure only admin can add can employees*/}
+        {role === "Administrator"&& (
+          <NavLink to="/add-employee" className={linkClasses}>
+            <UserPlus size={18} /> Add Employee
+          </NavLink>
+        )}
       </nav>
     </aside>
   );
