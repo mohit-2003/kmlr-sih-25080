@@ -291,8 +291,6 @@ Developed by Team **KMRL InsightVault**
 ## 🌐 **Project Links**
 
 - 📘 Problem Statement: _PS - 25080_
-- 🧩 Documentation & Architecture: _coming soon_
-- 🧠 Demo Video (if applicable): _coming soon_
 
 ## Contact
 
