@@ -215,14 +215,15 @@ const AddEmployeePage = () => {
           <Button
             type="submit"
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+            className={`bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 ${loading ? "" : "cursor-pointer"}`}
+
           >
             {loading ? (
               <span className="flex items-center gap-2">
                 <UserPlus size={18} /> Adding...
               </span>
             ) : (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 ">
                 <UserPlus size={18} /> Add Employee
               </span>
             )}
