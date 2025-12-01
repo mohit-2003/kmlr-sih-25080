@@ -11,7 +11,9 @@ const DocumentDetailPage = () => {
   useEffect(() => {
     const fetchDoc = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/v1/documents/${id}`);
+        const res = await fetch(
+          `import.meta.env.VITE_SERVER_URL/api/v1/documents/${id}`
+        );
         const data = await res.json();
         setDoc(data.document);
       } catch (err) {
@@ -34,7 +36,6 @@ const DocumentDetailPage = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 mt-8">
-
       {/* ========== HEADER ========== */}
       <Card className="p-8 flex items-start gap-4">
         <div className="p-4 bg-blue-100 rounded-xl">
@@ -42,12 +43,9 @@ const DocumentDetailPage = () => {
         </div>
 
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {doc.file_name}
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">{doc.file_name}</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Uploaded on{" "}
-            {new Date(doc.createdAt).toLocaleDateString()}
+            Uploaded on {new Date(doc.createdAt).toLocaleDateString()}
           </p>
         </div>
       </Card>
@@ -88,10 +86,19 @@ const DocumentDetailPage = () => {
         </h2>
 
         <div className="grid md:grid-cols-2 gap-y-3 text-gray-800">
-          <p><strong>Status:</strong> {doc.status}</p>
-          <p><strong>File Type:</strong> {doc.file_type.replace("application/", "")}</p>
-          <p><strong>File Size:</strong> {fileSizeMB} MB</p>
-          <p><strong>Language:</strong> {doc.language_detected}</p>
+          <p>
+            <strong>Status:</strong> {doc.status}
+          </p>
+          <p>
+            <strong>File Type:</strong>{" "}
+            {doc.file_type.replace("application/", "")}
+          </p>
+          <p>
+            <strong>File Size:</strong> {fileSizeMB} MB
+          </p>
+          <p>
+            <strong>Language:</strong> {doc.language_detected}
+          </p>
           <p>
             <strong>OCR Confidence:</strong> {doc.ocr_confidence}%
           </p>
@@ -120,7 +127,6 @@ const DocumentDetailPage = () => {
           </div>
         )}
       </Card>
-
     </div>
   );
 };

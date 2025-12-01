@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  UserPlus,
-  User,
-  Lock,
-  Briefcase,
-  Building2,
-} from "lucide-react";
+import { UserPlus, User, Lock, Briefcase, Building2 } from "lucide-react";
 
 import InputWithIcon from "@/components/ui/input-with-icon";
 import Button from "@/components/ui/button";
@@ -17,7 +11,7 @@ const AddEmployeePage = () => {
     loginId: "",
     password: "",
     employeeType: "",
-    department: "",   // 🔥 changed from array to single value
+    department: "", // 🔥 changed from array to single value
   });
 
   const [error, setError] = useState("");
@@ -78,7 +72,8 @@ const AddEmployeePage = () => {
     }
 
     try {
-      const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001";
+      const API_BASE =
+        import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 
       const res = await fetch(`${API_BASE}/api/v1/employees`, {
         method: "POST",
@@ -113,7 +108,6 @@ const AddEmployeePage = () => {
 
   return (
     <div className="space-y-6">
-
       {/* HEADER */}
       <Card className="p-8">
         <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
@@ -121,13 +115,13 @@ const AddEmployeePage = () => {
           Add Employee
         </h1>
         <p className="text-gray-600">
-          Create a new employee and assign login credentials, type, and department.
+          Create a new employee and assign login credentials, type, and
+          department.
         </p>
       </Card>
 
       <Card className="p-8 max-w-3xl">
         <form onSubmit={handleSubmit} className="space-y-6">
-
           {/* Login ID */}
           <FormGroup label="Login ID" htmlFor="loginId">
             <InputWithIcon
@@ -233,7 +227,6 @@ const AddEmployeePage = () => {
               </span>
             )}
           </Button>
-
         </form>
       </Card>
     </div>

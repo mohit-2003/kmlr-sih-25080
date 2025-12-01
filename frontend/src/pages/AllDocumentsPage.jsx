@@ -75,7 +75,7 @@ const AllDocumentsPage = () => {
     const fetchAllDocuments = async () => {
       try {
         const res = await fetch(
-          "http://localhost:5000/api/v1/documents?limit=9999"
+          `${import.meta.env.VITE_SERVER_URL}/api/v1/documents?limit=9999`
         );
         const data = await res.json();
 
@@ -123,7 +123,7 @@ const AllDocumentsPage = () => {
   const fetchLastUploaded = async (id) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/v1/documents/${id}`
+        `import.meta.env.VITE_SERVER_URL/api/v1/documents/${id}`
       );
       const data = await res.json();
       const doc = data.document;
@@ -145,9 +145,7 @@ const AllDocumentsPage = () => {
 
       setDocumentsData((prev) => ({
         ...prev,
-        sources: [
-          { ...prev.sources[0], documents: [mappedDoc] },
-        ],
+        sources: [{ ...prev.sources[0], documents: [mappedDoc] }],
       }));
     } catch (err) {
       console.error("Error fetching last uploaded document:", err);
@@ -207,7 +205,7 @@ const AllDocumentsPage = () => {
     const interval = setInterval(async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/v1/documents/${documentId}`
+          `import.meta.env.VITE_SERVER_URL/api/v1/documents/${documentId}`
         );
         const payload = await res.json();
         const doc = payload.document;
@@ -224,15 +222,12 @@ const AllDocumentsPage = () => {
             progress,
             file_name: doc.file_name || filename,
             uploadedAt:
-              m[documentId]?.uploadedAt ||
-              new Date().toLocaleTimeString(),
+              m[documentId]?.uploadedAt || new Date().toLocaleTimeString(),
             raw: doc,
           },
         }));
 
-        if (
-          ["COMPLETED", "FAILED", "UNREADABLE"].includes(status)
-        ) {
+        if (["COMPLETED", "FAILED", "UNREADABLE"].includes(status)) {
           clearInterval(interval);
 
           if (status === "COMPLETED") {
@@ -262,19 +257,10 @@ const AllDocumentsPage = () => {
   };
 
   const handleFileUpload = async (event) => {
-    const file =
-      event.target.files?.[0] ||
-      event.dataTransfer?.files?.[0];
+    const file = event.target.files?.[0] || event.dataTransfer?.files?.[0];
     if (!file) return;
 
-    const allowed = [
-      ".pdf",
-      ".doc",
-      ".docx",
-      ".txt",
-      ".xlsx",
-      ".xls",
-    ];
+    const allowed = [".pdf", ".doc", ".docx", ".txt", ".xlsx", ".xls"];
     const ext = "." + file.name.split(".").pop().toLowerCase();
     if (!allowed.includes(ext)) {
       setUploadMessage("❌ Unsupported file type.");
@@ -295,14 +281,15 @@ const AllDocumentsPage = () => {
       formData.append("employeeId", 21);
 
       const res = await fetch(
-        "http://localhost:5000/api/v1/process-document",
-        { method: "POST", body: formData }
+        "import.meta.env.VITE_SERVER_URL/api/v1/process-document",
+        {
+          method: "POST",
+          body: formData,
+        }
       );
 
       const data = await res.json();
-      const documentId =
-        data.document_id ||
-        data.document?.id;
+      const documentId = data.document_id || data.document?.id;
 
       if (!documentId) {
         const doc = data.document || data;
@@ -311,22 +298,17 @@ const AllDocumentsPage = () => {
         startPolling(documentId, file.name);
       }
 
-      setUploadMessage(
-        "⏳ Processing started. Showing live status..."
-      );
+      setUploadMessage("⏳ Processing started. Showing live status...");
     } catch (err) {
       console.error(err);
-      setUploadMessage(
-        "❌ Upload or backend error. See console."
-      );
+      setUploadMessage("❌ Upload or backend error. See console.");
     } finally {
       setIsUploading(false);
       setTimeout(() => setUploadMessage(""), 4000);
     }
   };
 
-  const handleUploadClick = () =>
-    fileInputRef.current?.click();
+  const handleUploadClick = () => fileInputRef.current?.click();
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -338,27 +320,21 @@ const AllDocumentsPage = () => {
     handleFileUpload(e);
   };
 
-  const allDocuments = documentsData.sources.flatMap(
-    (s) => s.documents
-  );
+  const allDocuments = documentsData.sources.flatMap((s) => s.documents);
 
   const filteredDocuments =
     selectedSource === "all"
       ? allDocuments
-      : documentsData.sources.find(
-          (s) => s.type === selectedSource
-        )?.documents || [];
+      : documentsData.sources.find((s) => s.type === selectedSource)
+          ?.documents || [];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      
       {/* HEADER */}
       <Card className="p-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Documents
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Documents</h1>
             <p className="text-gray-600">
               Manage and view your uploaded documents
             </p>
@@ -375,11 +351,7 @@ const AllDocumentsPage = () => {
           <Button
             onClick={handleUploadClick}
             disabled={isUploading}
-            className={
-              isUploading
-                ? "bg-gray-400 cursor-not-allowed"
-                : ""
-            }
+            className={isUploading ? "bg-gray-400 cursor-not-allowed" : ""}
           >
             <UploadCloud className="w-5 h-5 inline-block mr-2" />
             {isUploading ? "Uploading..." : "Upload Document"}
@@ -395,22 +367,16 @@ const AllDocumentsPage = () => {
 
       {/* GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
         {/* MAIN AREA */}
         <div className="lg:col-span-3 space-y-6">
           <Card className="p-8">
-
             {/* FILTER BUTTONS */}
             <div className="flex gap-3 mb-6">
               <Button
                 className={`py-2 ${
-                  selectedSource === "all"
-                    ? ""
-                    : "bg-gray-200 text-black"
+                  selectedSource === "all" ? "" : "bg-gray-200 text-black"
                 }`}
-                onClick={() =>
-                  setSelectedSource("all")
-                }
+                onClick={() => setSelectedSource("all")}
               >
                 All Documents
               </Button>
@@ -419,13 +385,9 @@ const AllDocumentsPage = () => {
                 <Button
                   key={src.type}
                   className={`py-2 ${
-                    selectedSource === src.type
-                      ? ""
-                      : "bg-gray-200 text-black"
+                    selectedSource === src.type ? "" : "bg-gray-200 text-black"
                   }`}
-                  onClick={() =>
-                    setSelectedSource(src.type)
-                  }
+                  onClick={() => setSelectedSource(src.type)}
                 >
                   {src.name}
                 </Button>
@@ -450,98 +412,83 @@ const AllDocumentsPage = () => {
                   ? "Uploading..."
                   : "Drop files here or click to upload"}
               </p>
-              <p className="text-gray-500 text-sm">
-                PDF, DOCX, XLSX supported
-              </p>
+              <p className="text-gray-500 text-sm">PDF, DOCX, XLSX supported</p>
             </div>
 
             {/* PROCESSING CARDS */}
             <div className="space-y-6 mt-8">
-              {Object.entries(processingMap).map(
-                ([docId, p]) => (
-                  <Card
-                    key={docId}
-                    className="p-6 border border-gray-200 cursor-pointer hover:shadow-lg transition"
-                    onClick={() =>
-                      navigate(`/documents/${docId}`)
-                    }
-                  >
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-400 text-white">
-                          {STATUS_ICON(p.status)}
+              {Object.entries(processingMap).map(([docId, p]) => (
+                <Card
+                  key={docId}
+                  className="p-6 border border-gray-200 cursor-pointer hover:shadow-lg transition"
+                  onClick={() => navigate(`/documents/${docId}`)}
+                >
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-400 text-white">
+                        {STATUS_ICON(p.status)}
+                      </div>
+                      <div>
+                        {/* 🔥 FIXED OVERFLOW */}
+                        <h3 className="font-semibold text-gray-900 block truncate max-w-[70%]">
+                          {p.file_name}
+                        </h3>
+
+                        <p className="text-gray-500 text-sm">
+                          {STATUS_LABEL[p.status] || "Processing..."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-gray-500">{p.uploadedAt}</div>
+                  </div>
+
+                  <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div
+                      className={`h-3 rounded-full transition-all duration-500`}
+                      style={{
+                        width: `${p.progress}%`,
+                        background:
+                          p.status === "COMPLETED"
+                            ? "linear-gradient(90deg,#06b6d4,#3b82f6)"
+                            : undefined,
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="text-sm text-gray-600">{p.progress}%</div>
+                    <div className="flex items-center gap-2">
+                      {p.status === "FAILED" && (
+                        <div className="text-sm text-red-600">
+                          Processing failed
                         </div>
-                        <div>
-
-                          {/* 🔥 FIXED OVERFLOW */}
-                          <h3 className="font-semibold text-gray-900 block truncate max-w-[70%]">
-                            {p.file_name}
-                          </h3>
-
-                          <p className="text-gray-500 text-sm">
-                            {STATUS_LABEL[p.status] ||
-                              "Processing..."}
-                          </p>
+                      )}
+                      {p.status === "UNREADABLE" && (
+                        <div className="text-sm text-yellow-600">
+                          Unreadable
                         </div>
-                      </div>
-
-                      <div className="text-sm text-gray-500">
-                        {p.uploadedAt}
-                      </div>
+                      )}
+                      {p.status === "COMPLETED" && (
+                        <div className="text-sm text-green-600">
+                          Processed — view details
+                        </div>
+                      )}
                     </div>
-
-                    <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                      <div
-                        className={`h-3 rounded-full transition-all duration-500`}
-                        style={{
-                          width: `${p.progress}%`,
-                          background:
-                            p.status === "COMPLETED"
-                              ? "linear-gradient(90deg,#06b6d4,#3b82f6)"
-                              : undefined,
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3">
-                      <div className="text-sm text-gray-600">
-                        {p.progress}%
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {p.status === "FAILED" && (
-                          <div className="text-sm text-red-600">
-                            Processing failed
-                          </div>
-                        )}
-                        {p.status === "UNREADABLE" && (
-                          <div className="text-sm text-yellow-600">
-                            Unreadable
-                          </div>
-                        )}
-                        {p.status === "COMPLETED" && (
-                          <div className="text-sm text-green-600">
-                            Processed — view details
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                )
-              )}
+                  </div>
+                </Card>
+              ))}
 
               {/* FINAL DOCUMENT CARDS */}
               {filteredDocuments.map((doc) => (
                 <Card
                   key={doc.id}
                   className="p-6 border border-gray-200 cursor-pointer hover:shadow-lg transition"
-                  onClick={() =>
-                    navigate(`/documents/${doc.id}`)
-                  }
+                  onClick={() => navigate(`/documents/${doc.id}`)}
                 >
                   <div className="flex items-start gap-3 mb-4">
                     <FileText className="w-6 h-6 text-indigo-600" />
                     <div>
-
                       {/* 🔥 FIXED OVERFLOW */}
                       <h3 className="font-semibold text-gray-900 block truncate max-w-[75%]">
                         {doc.title}
@@ -556,7 +503,6 @@ const AllDocumentsPage = () => {
                   {/* SUMMARY */}
                   {doc.aiSummary && (
                     <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm mb-4">
-
                       <h4 className="text-lg font-semibold text-gray-800 mb-2">
                         AI Summary
                       </h4>
@@ -566,16 +512,11 @@ const AllDocumentsPage = () => {
                       </p>
 
                       <ul className="list-disc ml-4 space-y-1">
-                        {doc.aiSummary.keyPoints
-                          .slice(0, 3)
-                          .map((p, index) => (
-                            <li
-                              key={index}
-                              className="text-gray-700 text-sm"
-                            >
-                              {p}
-                            </li>
-                          ))}
+                        {doc.aiSummary.keyPoints.slice(0, 3).map((p, index) => (
+                          <li key={index} className="text-gray-700 text-sm">
+                            {p}
+                          </li>
+                        ))}
                       </ul>
 
                       {doc.aiSummary.keyPoints.length > 3 && (
@@ -603,18 +544,12 @@ const AllDocumentsPage = () => {
 
         {/* RIGHT SIDEBAR */}
         <Card className="p-8">
-          <h3 className="font-semibold text-lg mb-5">
-            Recent Activity
-          </h3>
+          <h3 className="font-semibold text-lg mb-5">Recent Activity</h3>
 
           {documentsData.recentActivity.map((act, i) => (
-            <div
-              key={i}
-              className="flex gap-3 mb-4 text-sm"
-            >
+            <div key={i} className="flex gap-3 mb-4 text-sm">
               <div className="w-2 h-2 rounded-full bg-indigo-600 mt-2"></div>
               <div>
-
                 {/* 🔥 FIXED OVERFLOW */}
                 <p className="font-medium block truncate max-w-[180px]">
                   {act.title}
@@ -631,4 +566,3 @@ const AllDocumentsPage = () => {
 };
 
 export default AllDocumentsPage;
-
