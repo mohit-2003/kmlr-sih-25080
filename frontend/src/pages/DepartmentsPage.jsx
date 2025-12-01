@@ -32,7 +32,7 @@ const DepartmentsPage = () => {
   };
 
   return (
-    <div>
+    <div className="w-full max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
         <Building2 className="text-blue-600" /> Departments
       </h1>
@@ -44,7 +44,7 @@ const DepartmentsPage = () => {
       {/* Add Department Form */}
       <form
         onSubmit={handleAddDepartment}
-        className="flex gap-3 mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+        className="flex flex-col gap-3 sm:flex-row mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-200"
       >
         <input
           type="text"
@@ -55,14 +55,14 @@ const DepartmentsPage = () => {
         />
         <button
           type="submit"
-          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition"
+          className="flex items-center justify-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition"
         >
           <Plus size={18} /> Add
         </button>
       </form>
 
       {/* Department List */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {departments.map((dept, idx) => {
           const color = colorClasses[idx % colorClasses.length];
           return (
