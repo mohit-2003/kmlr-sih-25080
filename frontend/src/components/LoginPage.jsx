@@ -17,7 +17,7 @@ const LoginPage = () => {
         password: "",
     });
     const [error, setError] = useState("");
-    
+
     const { login } = useAuth();
     const navigate = useNavigate();
 
@@ -29,7 +29,7 @@ const LoginPage = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
 
-        // TEMP: Demo login logic (Replace with API)
+        // TEMP DEMO LOGIN (kept same)
         if (
             loginData.username === "demo@kmrl.com" &&
             loginData.password === "admin123"
@@ -43,7 +43,7 @@ const LoginPage = () => {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-            
+
             <Card className="w-full max-w-md p-10">
                 {/* Logo + Title */}
                 <div className="text-center mb-8">
@@ -58,24 +58,24 @@ const LoginPage = () => {
 
                 {/* Login Form */}
                 <form onSubmit={handleLogin} className="space-y-6">
-                    
+
                     {/* Username */}
-                    <FormGroup label="Employee ID / Email" htmlFor="username">
+                    <FormGroup label="Email" htmlFor="username">
                         <Input
                             id="username"
                             type="text"
                             value={loginData.username}
                             onChange={handleChange}
-                            placeholder="Enter your Employee ID or Email"
+                            placeholder="Enter your Email"
                             icon={User}
                             required
                         />
                     </FormGroup>
 
                     {/* Password */}
-                    <FormGroup label="Password" htmlFor="password"
-                        rightLabel="Forgot Password?"
-                        rightLabelLink="/forgot-password"
+                    <FormGroup
+                        label="Password"
+                        htmlFor="password"
                     >
                         <Input
                             id="password"
@@ -90,7 +90,7 @@ const LoginPage = () => {
                         />
                     </FormGroup>
 
-                    {/* Error message */}
+                    {/* Error Message */}
                     {error && (
                         <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
                             {error}
@@ -105,24 +105,18 @@ const LoginPage = () => {
 
                 {/* Footer */}
                 <div className="mt-6 text-center text-sm text-gray-500">
-                    <p>
+
+                    {/* DISABLED REQUEST ACCESS */}
+                    <p className="opacity-60 cursor select-none">
                         New employee?
-                        <a
-                            href="/request-access"
-                            className="text-indigo-600 font-semibold ml-1"
+                        <span
+                            className="ml-1 px-2 py-1 rounded bg-gray-300 text-gray-600 font-semibold inline-block"
                         >
                             Request Access
-                        </a>
+                        </span>
                     </p>
 
-                    {/* Demo login info */}
-                    <div className="mt-4 p-3 bg-gray-100 rounded-lg border border-gray-200 text-xs">
-                        <p className="font-medium text-gray-700">Demo Login:</p>
-                        <p>
-                            ID: <span className="font-mono font-semibold">demo@kmrl.com</span> |
-                            Pass: <span className="font-mono font-semibold">admin123</span>
-                        </p>
-                    </div>
+                    {/* ❌ REMOVED DEMO LOGIN BOX COMPLETELY */}
                 </div>
             </Card>
         </div>
