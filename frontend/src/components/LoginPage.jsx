@@ -17,7 +17,7 @@ const LoginPage = () => {
         password: "",
     });
     const [error, setError] = useState("");
-    
+
     const { login } = useAuth();
     const navigate = useNavigate();
 
@@ -68,7 +68,7 @@ const LoginPage = () => {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-            
+
             <Card className="w-full max-w-md p-10">
                 {/* Logo + Title */}
                 <div className="text-center mb-8">
@@ -83,24 +83,24 @@ const LoginPage = () => {
 
                 {/* Login Form */}
                 <form onSubmit={handleLogin} className="space-y-6">
-                    
+
                     {/* Username */}
-                    <FormGroup label="Employee ID / Email" htmlFor="username">
+                    <FormGroup label="Email" htmlFor="username">
                         <Input
                             id="username"
                             type="text"
                             value={loginData.username}
                             onChange={handleChange}
-                            placeholder="Enter your Employee ID or Email"
+                            placeholder="Enter your Email"
                             icon={User}
                             required
                         />
                     </FormGroup>
 
                     {/* Password */}
-                    <FormGroup label="Password" htmlFor="password"
-                        rightLabel="Forgot Password?"
-                        rightLabelLink="/forgot-password"
+                    <FormGroup
+                        label="Password"
+                        htmlFor="password"
                     >
                         <Input
                             id="password"
@@ -115,7 +115,7 @@ const LoginPage = () => {
                         />
                     </FormGroup>
 
-                    {/* Error message */}
+                    {/* Error Message */}
                     {error && (
                         <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
                             {error}
@@ -130,14 +130,15 @@ const LoginPage = () => {
 
                 {/* Footer */}
                 <div className="mt-6 text-center text-sm text-gray-500">
-                    <p>
+
+                    {/* DISABLED REQUEST ACCESS */}
+                    <p className="opacity-60 cursor select-none">
                         New employee?
-                        <a
-                            href="/request-access"
-                            className="text-indigo-600 font-semibold ml-1"
+                        <span
+                            className="ml-1 px-2 py-1 rounded bg-gray-300 text-gray-600 font-semibold inline-block"
                         >
                             Request Access
-                        </a>
+                        </span>
                     </p>
                     {/*
                         removed the demo login info 
