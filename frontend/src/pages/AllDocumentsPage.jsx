@@ -378,10 +378,10 @@ const AllDocumentsPage = () => {
             className={
               isUploading
                 ? "bg-gray-400 cursor-not-allowed"
-                : ""
+                : "cursor-pointer"
             }
           >
-            <UploadCloud className="w-5 h-5 inline-block mr-2" />
+            <UploadCloud className="w-5 h-5 inline-block mr-2 " />
             {isUploading ? "Uploading..." : "Upload Document"}
           </Button>
         </div>
@@ -401,7 +401,7 @@ const AllDocumentsPage = () => {
           <Card className="p-8">
 
             {/* FILTER BUTTONS */}
-            <div className="flex gap-3 mb-6">
+            {/* <div className="flex gap-3 mb-6">
               <Button
                 className={`py-2 ${
                   selectedSource === "all"
@@ -430,7 +430,7 @@ const AllDocumentsPage = () => {
                   {src.name}
                 </Button>
               ))}
-            </div>
+            </div> */}
 
             {/* DRAG & DROP */}
             <div
