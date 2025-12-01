@@ -14,7 +14,7 @@ export function validateAndCleanResult(result = {}) {
     purpose: clean(result.purpose) || "Not specified",
     assigned_departments: Array.isArray(result.departments)
       ? result.departments.filter((d) => validDepartments.includes(d))
-      : ["Administration"],
+      : [],
     priority: ["NORMAL", "LOW", "MEDIUM", "HIGH"].includes(
       result.priority?.toLowerCase()
     )
