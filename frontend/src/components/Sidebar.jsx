@@ -15,9 +15,9 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 p-4 shadow-xl transition-transform duration-200 transform ${
+      className={`fixed top-[72px] bottom-0 left-0 z-40 w-72 bg-white border-r border-gray-200 p-4 shadow-xl transition-all duration-300 ease-in-out transform ${
         isOpen ? "translate-x-0" : "-translate-x-full"
-      } lg:static lg:translate-x-0 lg:shadow-none`}
+      } lg:fixed lg:top-[72px] lg:translate-x-0 lg:shadow-none`}
     >
       <div className="flex items-center justify-between mb-6 lg:mb-10">
         <h2 className="text-lg font-semibold text-gray-900">Navigation</h2>

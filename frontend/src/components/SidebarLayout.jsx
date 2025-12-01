@@ -19,7 +19,7 @@ const DashboardLayout = () => {
           />
           {isSidebarOpen && (
             <div
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm lg:hidden z-40"
+              className="fixed inset-x-0 top-[72px] bottom-0 bg-black/40 backdrop-blur-sm lg:hidden z-30 transition-opacity duration-300"
               onClick={() => setIsSidebarOpen(false)}
               role="presentation"
             />
@@ -27,7 +27,7 @@ const DashboardLayout = () => {
         </>
       )}
       <div
-        className={`${role ? "flex-1" : "w-full"} p-4 sm:p-6 min-h-screen transition-all duration-300`}
+        className={`${role ? "flex-1 lg:ml-72" : "w-full"} p-4 sm:p-6 min-h-screen transition-all duration-300`}
       >
         {role && (
           <button
