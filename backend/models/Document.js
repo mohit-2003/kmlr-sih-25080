@@ -53,6 +53,7 @@ const Document = sequelize.define(
         "PREPROCESSING",
         "PROCESSING_OCR",
         "PROCESSING_LLM",
+        "SUMMARIZING",
         "COMPLETED",
         "FAILED",
         "UNREADABLE"
