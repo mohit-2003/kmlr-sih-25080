@@ -21,12 +21,15 @@ const SearchPage = () => {
     setResults([]);
 
     try {
-      const res = await axios.get("http://localhost:5000/api/v1/search", {
-        params: {
-          q: query,
-          limit: 20,
-        },
-      });
+      const res = await axios.get(
+        `${import.meta.env.VITE_SERVER_URL}/api/v1/search`,
+        {
+          params: {
+            q: query,
+            limit: 20,
+          },
+        }
+      );
 
       setResults(res.data.documents || []);
       setTotal(res.data.results || 0);
@@ -40,11 +43,9 @@ const SearchPage = () => {
 
   return (
     <div className="max-w-4xl">
-
       {/* Search Bar */}
       <Card className="mb-6 p-6">
         <div className="flex items-center gap-3">
-
           {/* Search Input */}
           <div className="flex-1">
             <InputWithIcon
@@ -89,7 +90,6 @@ const SearchPage = () => {
 
           {results.map((doc) => (
             <Card key={doc.id} className="p-6 hover:shadow-lg transition">
-
               <div className="flex items-center gap-3 mb-2">
                 <FileText className="text-blue-600" size={22} />
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -120,9 +120,7 @@ const SearchPage = () => {
 
       {/* No Results */}
       {!loading && query && results.length === 0 && !error && (
-        <div className="text-center mt-10 text-gray-500">
-          No results found.
-        </div>
+        <div className="text-center mt-10 text-gray-500">No results found.</div>
       )}
     </div>
   );

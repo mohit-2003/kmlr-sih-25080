@@ -121,7 +121,7 @@ const useDashboard = () => {
       formData.append("file", file);
 
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_URL}/api/process-document`,
+        `${import.meta.env.VITE_SERVER_URL}/api/v1/process-document`,
         {
           method: "POST",
           body: formData,
