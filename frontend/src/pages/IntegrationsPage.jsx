@@ -111,7 +111,7 @@ const IntegrationModal = ({ open, onClose, integration, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4">
-      <div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-xl">
+      <div className="bg-white w-full max-w-lg p-6 sm:p-8 rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
         
         <h2 className="text-2xl font-bold mb-2">Configure {integration.name}</h2>
         <p className="text-gray-600 mb-6">Enter the details below.</p>
@@ -180,10 +180,10 @@ const IntegrationsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-6xl mx-auto">
       
       {/* PAGE HEADER */}
-      <Card className="p-8">
+      <Card className="p-6 sm:p-8">
         <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
           <PlugZap className="text-blue-600" /> Integrations
         </h1>
@@ -191,7 +191,7 @@ const IntegrationsPage = () => {
       </Card>
 
       {/* GRID */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
         {integrations.map((item) => (
           <Card key={item.id} className="p-6">
             <div className="flex items-center gap-3 mb-4">

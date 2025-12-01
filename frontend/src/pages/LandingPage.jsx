@@ -22,8 +22,8 @@ const LandingPage = () => {
       {/* ----------------------------- */}
       {/* HERO SECTION */}
       {/* ----------------------------- */}
-      <section className="pt-32 pb-24 bg-gradient-to-br from-blue-900 to-indigo-800 text-white shadow-2xl">
-        <div className="container mx-auto px-4 text-center max-w-5xl">
+      <section className="pt-24 sm:pt-32 pb-20 bg-gradient-to-br from-blue-900 to-indigo-800 text-white shadow-2xl">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 text-center">
 
           {/* AI Badge */}
           <div className="flex items-center justify-center space-x-2 px-3 py-1 mb-6 mx-auto w-fit rounded-full text-xs font-medium text-green-200 bg-green-900/50 border border-green-700 shadow-lg cursor-pointer">
@@ -32,18 +32,18 @@ const LandingPage = () => {
           </div>
 
           {/* Headline */}
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-5 tracking-tight leading-snug">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-5 tracking-tight leading-tight px-2">
             Transform Document Chaos Into{" "}
             <span className="text-yellow-300">Clear Intelligence</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-xl text-blue-200 mb-10 max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl text-blue-200 mb-10 max-w-3xl mx-auto">
             Your AI-powered platform to eliminate information latency and safeguard compliance across KMRL operations.
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex justify-center flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 mb-16">
+          <div className="flex justify-center flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 mb-12">
             <button
               onClick={handleDashboardClick}
               className="flex items-center justify-center bg-blue-500 text-white px-10 py-4 rounded-lg font-bold text-lg hover:bg-blue-600 transition shadow-lg w-full sm:w-auto cursor-pointer"
@@ -63,7 +63,7 @@ const LandingPage = () => {
           </div>
 
           {/* Key Metrics */}
-          <div className="flex justify-center space-x-4 md:space-x-16 pt-8 border-t border-blue-700/50">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-blue-700/50">
             <MetricCard value="95%" label="Information Latency Reduced" />
             <MetricCard value="24/7" label="Real-time Compliance Monitoring" />
             <MetricCard value="1000+" label="Documents Processed Daily" />
