@@ -107,9 +107,9 @@ const AddEmployeePage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-3xl mx-auto">
       {/* HEADER */}
-      <Card className="p-8">
+      <Card className="p-6 sm:p-8">
         <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
           <UserPlus className="text-blue-600" />
           Add Employee
@@ -120,7 +120,7 @@ const AddEmployeePage = () => {
         </p>
       </Card>
 
-      <Card className="p-8 max-w-3xl">
+      <Card className="p-6 sm:p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Login ID */}
           <FormGroup label="Login ID" htmlFor="loginId">

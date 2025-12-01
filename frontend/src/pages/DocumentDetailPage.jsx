@@ -26,7 +26,7 @@ const DocumentDetailPage = () => {
 
   if (!doc) {
     return (
-      <div className="max-w-5xl mx-auto mt-10 text-center text-gray-600">
+      <div className="max-w-5xl mx-auto mt-10 px-4 text-center text-gray-600">
         Loading document...
       </div>
     );
@@ -35,9 +35,9 @@ const DocumentDetailPage = () => {
   const fileSizeMB = (doc.file_size / (1024 * 1024)).toFixed(2);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 mt-8">
+    <div className="max-w-5xl mx-auto space-y-8 mt-8 px-4">
       {/* ========== HEADER ========== */}
-      <Card className="p-8 flex items-start gap-4">
+      <Card className="p-6 sm:p-8 flex flex-col sm:flex-row items-start gap-4">
         <div className="p-4 bg-blue-100 rounded-xl">
           <FileText className="w-8 h-8 text-blue-600" />
         </div>
@@ -52,7 +52,7 @@ const DocumentDetailPage = () => {
 
       {/* ========== SHORT SUMMARY ========== */}
       {doc.short_summary_en && (
-        <Card className="p-8">
+        <Card className="p-6 sm:p-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-3">
             Short Summary
           </h2>
@@ -64,7 +64,7 @@ const DocumentDetailPage = () => {
 
       {/* ========== DETAILED SUMMARY ========== */}
       {doc.detailed_summary_en?.length > 0 && (
-        <Card className="p-8">
+        <Card className="p-6 sm:p-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">
             Detailed Summary
           </h2>
@@ -80,12 +80,12 @@ const DocumentDetailPage = () => {
       )}
 
       {/* ========== DOCUMENT INFO SECTION ========== */}
-      <Card className="p-8 space-y-4">
+      <Card className="p-6 sm:p-8 space-y-4">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">
           Document Info
         </h2>
 
-        <div className="grid md:grid-cols-2 gap-y-3 text-gray-800">
+        <div className="grid gap-3 sm:grid-cols-2 text-gray-800">
           <p>
             <strong>Status:</strong> {doc.status}
           </p>

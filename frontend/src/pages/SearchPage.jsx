@@ -42,12 +42,12 @@ const SearchPage = () => {
   };
 
   return (
-    <div className="max-w-4xl">
+    <div className="w-full max-w-4xl mx-auto">
       {/* Search Bar */}
       <Card className="mb-6 p-6">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {/* Search Input */}
-          <div className="flex-1">
+          <div className="flex-1 w-full">
             <InputWithIcon
               icon={Search}
               placeholder="Search documents..."
@@ -57,12 +57,14 @@ const SearchPage = () => {
           </div>
 
           {/* Go Button */}
-          <Button
-            onClick={handleSearch}
-            className="w-auto px-6 bg-blue-600 hover:bg-blue-700"
-          >
-            Go
-          </Button>
+          <div className="w-full sm:w-auto">
+            <Button
+              onClick={handleSearch}
+              className="w-full sm:w-auto px-6 bg-blue-600 hover:bg-blue-700"
+            >
+              Go
+            </Button>
+          </div>
         </div>
       </Card>
 

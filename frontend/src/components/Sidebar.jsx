@@ -1,8 +1,8 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, FileText, Search, Layers, UserPlus } from "lucide-react";
+import { Home, FileText, Search, Layers, UserPlus, X } from "lucide-react";
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
   const linkClasses = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
       isActive
@@ -11,26 +11,40 @@ const Sidebar = () => {
     }`;
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 min-h-screen p-4">
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 p-4 shadow-xl transition-transform duration-200 transform ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      } lg:static lg:translate-x-0 lg:shadow-none`}
+    >
+      <div className="flex items-center justify-between mb-6 lg:mb-10">
+        <h2 className="text-lg font-semibold text-gray-900">Navigation</h2>
+        <button
+          className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+          onClick={onClose}
+          aria-label="Close sidebar"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
       <nav className="flex flex-col gap-2">
-        <NavLink to="/dashboard" end className={linkClasses}>
+        <NavLink to="/dashboard" end className={linkClasses} onClick={onClose}>
           <Home size={18} /> Dashboard
         </NavLink>
-        <NavLink to="/search" className={linkClasses}>
+        <NavLink to="/search" className={linkClasses} onClick={onClose}>
           <Search size={18} /> Search
         </NavLink>
-        <NavLink to="/integrations" className={linkClasses}>
+        <NavLink to="/integrations" className={linkClasses} onClick={onClose}>
           <Layers size={18} /> Integrations
         </NavLink>
-        <NavLink to="/documents" className={linkClasses}>
+        <NavLink to="/documents" className={linkClasses} onClick={onClose}>
           <FileText size={18} /> Upload Docs
         </NavLink>
-        
-        <NavLink to="/add-employee" className={linkClasses}>
+
+        <NavLink to="/add-employee" className={linkClasses} onClick={onClose}>
           <UserPlus size={18} /> Add Employee
         </NavLink>
       </nav>
-    </div>
+    </aside>
   );
 };
 
