@@ -27,8 +27,8 @@ const User = sequelize.define(
     },
 
     role: {
-      type: DataTypes.STRING,
-      defaultValue: "user",
+      type: DataTypes.ENUM("SUPER_ADMIN", "ADMIN", "EMPLOYEE"),
+      defaultValue: "EMPLOYEE",
     },
 
     department_id: {
@@ -46,14 +46,13 @@ const User = sequelize.define(
       defaultValue: DataTypes.NOW,
     },
     reset_otp: {
-  type: DataTypes.STRING,
-  allowNull: true,
-},
-reset_otp_expiry: {
-  type: DataTypes.DATE,
-  allowNull: true,
-},
-
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reset_otp_expiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: "users",

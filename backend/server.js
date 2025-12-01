@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB, disconnectDB } from "./config/database.js";
 import documentRoutes from "./routes/documentRoutes.js";
+import departmentRoutes from "./routes/departmentRoutes.js";
 import { initLLM } from "./services/llm/llmAdapter.js";
 import { terminatePool } from "./services/ocr/ocrEngine.js"; // <--- Import OCR cleanup
 import authRoutes from "./routes/authRoutes.js";
@@ -29,7 +30,8 @@ try {
 
 // Routes
 app.use("/api/v1", documentRoutes);
-app.use("/api/v1/auth",authRoutes);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/departments", departmentRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
