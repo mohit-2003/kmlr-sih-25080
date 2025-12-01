@@ -146,11 +146,15 @@ const Navbar = () => {
               >
                 Logout
               </Button>
-
+              
+            {/*Had to update this part as the changes were made to the role field of users table*}
             {/* Role Badge */}
             <span className="text-sm bg-white/20 px-3 py-1 rounded-full capitalize">
-              {/*showing the role dynamically */}
-              {role === "Administrator" ? "Administrator" : "Employee"}
+              {role === "SUPER_ADMIN"
+                ? "Super Admin"
+                : role === "ADMIN"
+                ? "Admin"
+                : "Employee"}
             </span>
           </>
         )}
