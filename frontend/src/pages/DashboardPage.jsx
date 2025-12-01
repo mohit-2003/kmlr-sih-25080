@@ -82,8 +82,8 @@ const DashboardPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             
             {/* Total Documents */}
-            <Card className="hover:shadow-lg transition">
-              <div className="flex items-center justify-between">
+            <Card className="hover:shadow-lg transition  border-indigo-400">
+              <div className="flex items-center justify-between ">
                 <div>
                   <p className="text-sm text-gray-600">Total Documents</p>
                   <p className="text-3xl font-bold text-gray-900">
@@ -97,7 +97,7 @@ const DashboardPage = () => {
             </Card>
 
             {/* High Priority */}
-            <Card className="hover:shadow-lg transition">
+            <Card className="hover:shadow-lg transition border-red-400 ">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">High Priority</p>
@@ -112,7 +112,7 @@ const DashboardPage = () => {
             </Card>
 
             {/* Recent Uploads */}
-            <Card className="hover:shadow-lg transition">
+            <Card className="hover:shadow-lg transition border-green-400 ">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Recent Uploads</p>
@@ -134,7 +134,7 @@ const DashboardPage = () => {
               <h2 className="text-xl font-bold text-gray-900">Recent Documents</h2>
               <button
                 onClick={() => navigate("/documents")}
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium cursor-pointer"
               >
                 View All <ArrowRight size={14} />
               </button>
@@ -146,16 +146,16 @@ const DashboardPage = () => {
                   key={i}
                   className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition cursor-pointer"
                 >
-                  <div className="flex justify-between mb-2">
+                  <div className="flex justify-between mb-2 sm:gap-2">
                     <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                       {doc.title}
                       <span
-                        className={`text-xs px-2 py-1 rounded-full ${priorityStyles[doc.priority]}`}
+                        className={`text-xs px-2 py-1 rounded-full sm:text-center  ${priorityStyles[doc.priority]}`}
                       >
                         {doc.priority.toUpperCase()} PRIORITY
                       </span>
                     </h3>
-                    <span className="text-sm text-gray-500">{doc.date}</span>
+                    <span className="text-sm text-gray-500 sm:text-xs sm:mt-2">{doc.date}</span>
                   </div>
 
                   <p className="text-gray-600 text-sm mb-3">{doc.description}</p>
@@ -189,7 +189,7 @@ const DashboardPage = () => {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Data Connections</h2>
             <p className="text-gray-600 text-sm mb-4">Connect external sources</p>
 
-            <Button onClick={() => navigate("/integrations")}>
+            <Button onClick={() => navigate("/integrations")} className="cursor-pointer">
               <span className="flex items-center justify-center gap-2">
                 <Database size={18} /> Connect Sources
               </span>
@@ -200,9 +200,9 @@ const DashboardPage = () => {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
             <button
               onClick={() => navigate("/documents")}
-              className="w-full flex items-center justify-between p-4 border rounded-xl hover:border-blue-300 hover:bg-blue-50 transition"
+              className="w-full flex items-center justify-between p-4 border rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition"
             >
-              <span className="font-medium text-gray-900">Upload Documents</span>
+              <span className="font-medium text-gray-500">Upload Documents</span>
               <Upload className="w-5 h-5 text-gray-500" />
             </button>
           </Card>
