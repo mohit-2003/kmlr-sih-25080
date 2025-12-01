@@ -1,37 +1,68 @@
-import React, { useState } from "react";
-import { UserPlus, User, Lock, Briefcase, Building2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
 
-import InputWithIcon from "@/components/ui/input-with-icon";
-import Button from "@/components/ui/button";
-import FormGroup from "@/components/ui/formGroup";
-import Card from "@/components/ui/card";
+import { UserPlus, User, Lock, Briefcase, Building2, Mail } from "lucide-react";
+
+import InputWithIcon from "../components/ui/input-with-icon";
+import Button from "../components/ui/button";
+import FormGroup from "../components/ui/formGroup";
+import Card from "../components/ui/card";
+
+import { useAuth } from "../context/AuthContext";
 
 const AddEmployeePage = () => {
+  const { role, departmentId, loading: authLoading } = useAuth();
+
   const [formData, setFormData] = useState({
-    loginId: "",
+    name: "",
+    email: "",
     password: "",
     employeeType: "",
-    department: "", // 🔥 changed from array to single value
+    department: "",
   });
 
+  const [availableDepartments, setAvailableDepartments] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
-  // 🔥 Manager & Viewer removed
-  const employeeTypes = [
-    { value: "admin", label: "Administrator" },
-    { value: "employee", label: "Employee" },
-  ];
+  console.log("ROLE:", role);
+  console.log("DEPARTMENT ID:", departmentId);
+  console.log("AUTH LOADING:", authLoading);
 
-  const availableDepartments = [
-    "Engineering",
-    "HR",
-    "Finance",
-    "Safety",
-    "Legal",
-    "Procurement",
-  ];
+  // PREFILL when AuthContext is ready
+  useEffect(() => {
+    if (authLoading) return;
+
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      employeeType: role === "ADMIN" ? "EMPLOYEE" : "",
+      department: role === "ADMIN" ? departmentId : "",
+    });
+
+    setInitialized(true);
+  }, [authLoading, role, departmentId]);
+
+  // FETCH DEPARTMENTS
+  useEffect(() => {
+    const API_BASE = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+
+    fetch(`${API_BASE}/api/v1/departments`)
+      .then((res) => res.json())
+      .then((data) => setAvailableDepartments(data.departments || []))
+      .catch(() => setAvailableDepartments([]));
+  }, []);
+
+  // EMPLOYEE TYPES BASED ON ROLE
+  const employeeTypes =
+    role === "SUPER_ADMIN"
+      ? [
+          { value: "ADMIN", label: "Admin" },
+          { value: "EMPLOYEE", label: "Employee" },
+        ]
+      : [{ value: "EMPLOYEE", label: "Employee" }];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,194 +70,172 @@ const AddEmployeePage = () => {
     setSuccess("");
   };
 
+  // SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitLoading(true);
     setError("");
     setSuccess("");
-    setLoading(true);
 
-    if (!formData.loginId.trim()) {
-      setError("Login ID is required");
-      setLoading(false);
+    const API_BASE = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+
+    // VALIDATION
+    if (!formData.name.trim()) {
+      setError("Name is required");
+      setSubmitLoading(false);
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError("Email is required");
+      setSubmitLoading(false);
       return;
     }
     if (!formData.password.trim()) {
       setError("Password is required");
-      setLoading(false);
+      setSubmitLoading(false);
       return;
     }
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters");
-      setLoading(false);
+      setSubmitLoading(false);
       return;
     }
     if (!formData.employeeType) {
-      setError("Employee type is required");
-      setLoading(false);
+      setError("Role is required");
+      setSubmitLoading(false);
       return;
     }
-    if (!formData.department) {
-      setError("Please select a department");
-      setLoading(false);
+    if (role !== "ADMIN" && !formData.department) {
+      setError("Department is required");
+      setSubmitLoading(false);
       return;
     }
 
     try {
-      const API_BASE =
-        import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
-
-      const res = await fetch(`${API_BASE}/api/v1/employees`, {
+      const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
-          departments: [formData.department], // 🔥 API expects array
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: formData.employeeType,
+          department_id: formData.department,
         }),
       });
 
       const data = await res.json();
 
-      if (!res.ok || data.success === false) {
-        throw new Error(data.error || "Failed to add employee");
+      if (!res.ok) {
+        throw new Error(data.error || "Registration failed");
       }
 
       setSuccess("Employee added successfully!");
+
       setFormData({
-        loginId: "",
+        name: "",
+        email: "",
         password: "",
-        employeeType: "",
-        department: "",
+        employeeType: role === "ADMIN" ? "EMPLOYEE" : "",
+        department: role === "ADMIN" ? departmentId : "",
       });
 
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(err.message || "Failed to add employee");
+      setError(err.message);
     } finally {
-      setLoading(false);
+      setSubmitLoading(false);
     }
   };
 
+  if (!initialized) return null; // Wait until prefilled
+
   return (
     <div className="space-y-6 w-full max-w-3xl mx-auto">
-      {/* HEADER */}
       <Card className="p-6 sm:p-8">
         <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
-          <UserPlus className="text-blue-600" />
-          Add Employee
+          <UserPlus className="text-blue-600" /> Add Employee
         </h1>
-        <p className="text-gray-600">
-          Create a new employee and assign login credentials, type, and
-          department.
-        </p>
       </Card>
 
       <Card className="p-6 sm:p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Login ID */}
-          <FormGroup label="Login ID" htmlFor="loginId">
+
+          <FormGroup label="Name">
             <InputWithIcon
               icon={User}
-              id="loginId"
-              name="loginId"
-              type="text"
-              placeholder="Enter login ID"
-              value={formData.loginId}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
+              placeholder="Enter name"
               required
             />
           </FormGroup>
 
-          {/* Password */}
-          <FormGroup label="Password" htmlFor="password">
+          <FormGroup label="Email">
+            <InputWithIcon
+              icon={Mail}
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Enter email"
+              required
+            />
+          </FormGroup>
+
+          <FormGroup label="Password">
             <InputWithIcon
               icon={Lock}
-              id="password"
-              name="password"
               type="password"
-              placeholder="Enter password"
+              name="password"
               value={formData.password}
               onChange={handleChange}
+              placeholder="Enter password"
               required
-              minLength={6}
             />
           </FormGroup>
 
-          {/* Employee Type (Dropdown) */}
           <FormGroup label="Employee Type">
-            <div className="relative">
-              <Briefcase
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <select
-                name="employeeType"
-                value={formData.employeeType}
-                onChange={handleChange}
-                className="w-full px-4 py-3 pl-10 border rounded-xl focus:ring-2 focus:ring-indigo-500"
-                required
-              >
-                <option value="">Select employee type</option>
-                {employeeTypes.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              name="employeeType"
+              value={formData.employeeType}
+              onChange={handleChange}
+              disabled={role === "ADMIN"}
+              className="w-full px-4 py-3 border rounded-xl"
+              required
+            >
+              <option value="">Select role</option>
+              {employeeTypes.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
           </FormGroup>
 
-          {/* Department - Single Select Dropdown */}
           <FormGroup label="Department">
-            <div className="relative">
-              <Building2
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <select
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className="w-full px-4 py-3 pl-10 border rounded-xl focus:ring-2 focus:ring-indigo-500"
-                required
-              >
-                <option value="">Select department</option>
-                {availableDepartments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              name="department"
+              value={formData.department}
+              onChange={handleChange}
+              disabled={role === "ADMIN"}
+              className="w-full px-4 py-3 border rounded-xl"
+              required
+            >
+              <option value="">Select department</option>
+              {availableDepartments.map((dept) => (
+                <option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </option>
+              ))}
+            </select>
           </FormGroup>
 
-          {/* Error + Success */}
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl">
-              {success}
-            </div>
-          )}
+          {error && <div className="p-4 bg-red-100 text-red-700">{error}</div>}
+          {success && <div className="p-4 bg-green-100 text-green-700">{success}</div>}
 
-          {/* Submit */}
-          <Button
-            type="submit"
-            disabled={loading}
-            className={`bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 ${loading ? "" : "cursor-pointer"}`}
-
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <UserPlus size={18} /> Adding...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2 ">
-                <UserPlus size={18} /> Add Employee
-              </span>
-            )}
+          <Button disabled={submitLoading}>
+            {submitLoading ? "Adding..." : "Add Employee"}
           </Button>
         </form>
       </Card>

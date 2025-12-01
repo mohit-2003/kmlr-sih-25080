@@ -42,11 +42,11 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
         <NavLink to="/documents" className={linkClasses} onClick={onClose}>
           <FileText size={18} /> Upload Docs
         </NavLink>
-        {/* making sure only admin can add can employees*/}
-        {role === "Administrator"&& (
-          <NavLink to="/add-employee" className={linkClasses}>
-            <UserPlus size={18} /> Add Employee
-          </NavLink>
+        {/* Updated the code on the basis of the role changes in users table*/}
+        {(role === "SUPER_ADMIN" || role === "ADMIN") && (
+            <NavLink to="/add-employee" className={linkClasses}>
+                <UserPlus size={18} /> Add Employee
+            </NavLink>
         )}
       </nav>
     </aside>
