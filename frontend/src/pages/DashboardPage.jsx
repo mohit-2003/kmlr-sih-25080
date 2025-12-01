@@ -2,10 +2,15 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
+//imported it for the use of role
+import { useAuth } from "../context/AuthContext";
 import { FileText, AlertTriangle, Upload, ArrowRight, Database } from "lucide-react";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
+
+  //role of the logged in person
+  const { name } = useAuth();
 
   // Dynamic greeting
   const hour = new Date().getHours();
@@ -56,7 +61,8 @@ const DashboardPage = () => {
       {/* Header */}
       <Card>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          {greeting}, System Administrator
+          {/*//showing the exact role*/}
+          {greeting}, {name}
         </h1>
         <p className="text-gray-600">Here's your personalized briefing for today</p>
       </Card>

@@ -1,14 +1,58 @@
 // src/components/Navbar.jsx
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import Button from "@/components/ui/button";
+import { useAuth } from "../context/AuthContext";
+import Button from "./ui/button";
+
+
+// - Shows Home + Login on Landing Page ("/")
+// - Shows Dashboard + Logout + Role on authenticated pages
+// - Uses 'loading' to prevent random flashes on refresh
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, logout } = useAuth();
+  const { role, logout,loading } = useAuth();
 
+  // Hide Navbar completely on Login page
+  if (location.pathname.startsWith("/login")) return null;
+
+  // WAIT for AuthContext to restore role
+  if (loading) return null;   
+
+  // Force Home + Login UI on Landing Page (Public UI)
+  if (location.pathname === "/") {
+    return (
+      <nav className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-blue-800 to-blue-600 text-white sticky top-0 z-50 shadow-lg">
+        <div className="flex items-center">
+          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-blue-800 font-bold mr-3">
+            🚉
+          </div>
+          <h2 className="m-0 text-xl font-bold font-inter">KMRL InsightVault</h2>
+        </div>
+
+        <div className="flex gap-6 items-center">
+          <Link
+            to="/"
+            className={`no-underline font-medium transition-colors py-2 px-4 rounded-lg ${
+              location.pathname === "/"
+                ? "bg-white text-blue-800 font-semibold"
+                : "text-white hover:bg-blue-700"
+            }`}
+          >
+            Home
+          </Link>
+
+          <Link
+            to="/login"
+            className="no-underline font-medium transition-colors py-2 px-4 rounded-lg text-white hover:bg-blue-700"
+          >
+            Login
+          </Link>
+        </div>
+      </nav>
+    );
+  }
   const isActive = (path) => location.pathname === path;
 
   const handleLogout = () => {
@@ -79,7 +123,8 @@ const Navbar = () => {
 
             {/* Role Badge */}
             <span className="text-sm bg-white/20 px-3 py-1 rounded-full capitalize">
-              {role}
+              {/*showing the role dynamically */}
+              {role === "Administrator" ? "Administrator" : "Employee"}
             </span>
           </>
         )}

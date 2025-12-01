@@ -26,20 +26,45 @@ const LoginPage = () => {
         setError("");
     };
 
+
     const handleLogin = async (e) => {
         e.preventDefault();
+        setError("");
 
-        // TEMP: Demo login logic (Replace with API)
-        if (
-            loginData.username === "demo@kmrl.com" &&
-            loginData.password === "admin123"
-        ) {
-            login("admin");
+        try {
+            // Call backend login API
+            const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: loginData.username,  // backend expects "email"
+                    password: loginData.password,
+                }),
+            });
+            // Extract token + user role from backend response
+            const data = await response.json();
+
+            if (!data.success) {
+                setError(data.error || "Invalid login credentials");
+                return;
+            }
+
+            //Save JWT token for authenticated API calls
+            localStorage.setItem("token", data.token);
+
+            // Saving name + role in AuthContext
+            login(data.user.role, data.user.name);
+
+            // Saving name in localStorage for persistence
+            localStorage.setItem("name", data.user.name);
+
+            // Redirect to dashboard
             navigate("/dashboard");
-        } else {
-            setError("Invalid credentials. Please try again.");
+        } catch (err) {
+            setError("Server error, please try again.");
         }
     };
+
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
@@ -114,15 +139,9 @@ const LoginPage = () => {
                             Request Access
                         </a>
                     </p>
-
-                    {/* Demo login info */}
-                    <div className="mt-4 p-3 bg-gray-100 rounded-lg border border-gray-200 text-xs">
-                        <p className="font-medium text-gray-700">Demo Login:</p>
-                        <p>
-                            ID: <span className="font-mono font-semibold">demo@kmrl.com</span> |
-                            Pass: <span className="font-mono font-semibold">admin123</span>
-                        </p>
-                    </div>
+                    {/*
+                        removed the demo login info 
+                    */}
                 </div>
             </Card>
         </div>
