@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 
 /**
  * Extracts essential metadata from uploaded file.
