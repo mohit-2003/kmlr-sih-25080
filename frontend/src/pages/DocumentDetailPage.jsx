@@ -36,18 +36,35 @@ const DocumentDetailPage = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 mt-8 px-4">
-      {/* ========== HEADER ========== */}
-      <Card className="p-6 sm:p-8 flex flex-col sm:flex-row items-start gap-4">
-        <div className="p-4 bg-blue-100 rounded-xl">
-          <FileText className="w-8 h-8 text-blue-600" />
+
+      {/* ========== HEADER WITH BADGE ========== */}
+      <Card className="p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+
+        {/* Left: Icon + Title */}
+        <div className="flex items-start gap-4">
+          <div className="p-4 bg-blue-100 rounded-xl">
+            <FileText className="w-8 h-8 text-blue-600" />
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 break-words max-w-[600px]">
+              {doc.file_name}
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              Uploaded on {new Date(doc.createdAt).toLocaleDateString()}
+            </p>
+          </div>
         </div>
 
+        {/* RIGHT BADGE: Manual Review */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{doc.file_name}</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Uploaded on {new Date(doc.createdAt).toLocaleDateString()}
-          </p>
+          {doc.ocr_confidence < 60 && (
+            <span className="px-3 py-1 text-xs font-semibold bg-red-600 text-white rounded-full shadow">
+              MANUAL REVIEW REQUIRED
+            </span>
+          )}
         </div>
+
       </Card>
 
       {/* ========== SHORT SUMMARY ========== */}
@@ -79,29 +96,18 @@ const DocumentDetailPage = () => {
         </Card>
       )}
 
-      {/* ========== DOCUMENT INFO SECTION ========== */}
+      {/* ========== DOCUMENT INFO ========== */}
       <Card className="p-6 sm:p-8 space-y-4">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">
           Document Info
         </h2>
 
         <div className="grid gap-3 sm:grid-cols-2 text-gray-800">
-          <p>
-            <strong>Status:</strong> {doc.status}
-          </p>
-          <p>
-            <strong>File Type:</strong>{" "}
-            {doc.file_type.replace("application/", "")}
-          </p>
-          <p>
-            <strong>File Size:</strong> {fileSizeMB} MB
-          </p>
-          <p>
-            <strong>Language:</strong> {doc.language_detected}
-          </p>
-          <p>
-            <strong>OCR Confidence:</strong> {doc.ocr_confidence}%
-          </p>
+          <p><strong>Status:</strong> {doc.status}</p>
+          <p><strong>File Type:</strong> {doc.file_type.replace("application/", "")}</p>
+          <p><strong>File Size:</strong> {fileSizeMB} MB</p>
+          <p><strong>Language:</strong> {doc.language_detected}</p>
+          <p><strong>OCR Confidence:</strong> {doc.ocr_confidence}%</p>
           <p>
             <strong>Departments:</strong>{" "}
             {doc.assigned_departments?.length
@@ -110,7 +116,6 @@ const DocumentDetailPage = () => {
           </p>
         </div>
 
-        {/* Tags */}
         {doc.tags?.length > 0 && (
           <div>
             <strong>Tags:</strong>

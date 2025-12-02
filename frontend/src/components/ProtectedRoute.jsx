@@ -8,7 +8,8 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const ProtectedRoute = ({ children }) => {
-  // Wait for AuthContext to finish restoring session.
+  //Prakhar
+  // Waiting for AuthContext to finish restoring session.
   const { role,loading } = useAuth();
   const location = useLocation();
 
@@ -19,15 +20,19 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // Block employees from accessing Add Employee page manually
-  if (role !== "Administrator" && location.pathname === "/add-employee") {
-    return <Navigate to="/dashboard" replace />;
+  //Only admin and super admin are allowed
+  if (role === "EMPLOYEE" && location.pathname === "/add-employee") {
+      return <Navigate to="/dashboard" replace />;
   }
+
+
 
   if (!role) {
     // If not logged in => redirect to login page.
     return <Navigate to="/login" replace />;
   }
 
+  //allowing access
   return children;
 };
 

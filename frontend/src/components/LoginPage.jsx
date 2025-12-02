@@ -52,11 +52,9 @@ const LoginPage = () => {
             //Save JWT token for authenticated API calls
             localStorage.setItem("token", data.token);
 
-            // Saving name + role in AuthContext
-            login(data.user.role, data.user.name);
+            // Saving name + role + department id in AuthContext
+            login(data.user.role, data.user.name, data.user.department_id);
 
-            // Saving name in localStorage for persistence
-            localStorage.setItem("name", data.user.name);
 
             // Redirect to dashboard
             navigate("/dashboard");
@@ -67,9 +65,9 @@ const LoginPage = () => {
 
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
 
-            <Card className="w-full max-w-md p-10">
+            <Card className="w-full max-w-md p-6 sm:p-10">
                 {/* Logo + Title */}
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-700 rounded-xl shadow">
