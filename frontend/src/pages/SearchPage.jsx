@@ -1,38 +1,97 @@
-import React, { useState } from "react";
+// src/pages/SearchPage.jsx
+/**
+  SearchPage Overview
+ 
+  This page provides full-text search functionality for documents.
+  Users can:
+   - Enter queries and search across document metadata, OCR text, summaries, etc.
+   - View paginated/top-20 search results
+   - See quick document previews through the DocumentCard component
+ 
+  The page also stores the last search state (query + results + total count)
+  in sessionStorage so that when a user navigates away and returns, their
+  previous results are restored automatically.
+ 
+  Key features:
+   - Real-time search input with Enter key support
+   - Persistent search state across navigation
+   - Loading, error, no-results, and results states
+ 
+  This page acts as the primary document discovery interface in the app.
+ */
+
+
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Search, Loader2, FileText } from "lucide-react";
+import { Search } from "lucide-react";
 
 import InputWithIcon from "@/components/ui/input-with-icon";
 import Button from "@/components/ui/button";
 import Card from "@/components/ui/card";
+import DocumentCard from "@/components/DocumentCard";
+
+// Key used to persist search state in session storage
+const SEARCH_KEY = "searchState";
 
 const SearchPage = () => {
+  // Query input
   const [query, setQuery] = useState("");
+  // Search results
   const [results, setResults] = useState([]);
+  // Number of results returned
   const [total, setTotal] = useState(0);
+  
+  // UI states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  /* ---------------------------------------------------
+     Restore previous search 
+     This runs every time the user returns to this page.
+     Ensures the user sees the same results as before.
+     --------------------------------------------------- */
+  useEffect(() => {
+    const saved = sessionStorage.getItem(SEARCH_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setQuery(parsed.query);
+      setResults(parsed.results);
+      setTotal(parsed.total);
+    }
+  }, []);
+
+  /* ---------------------------------------------------
+     Execute a new search
+     - Validates empty query
+     - Makes API request
+     - Saves search state (so "Back" preserves results), Prakhar
+     --------------------------------------------------- */
   const handleSearch = async () => {
     if (!query.trim()) return;
 
     setLoading(true);
     setError("");
-    setResults([]);
 
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_SERVER_URL}/api/v1/search`,
-        {
-          params: {
-            q: query,
-            limit: 20,
-          },
-        }
+        { params: { q: query, limit: 20 } }
       );
 
-      setResults(res.data.documents || []);
+      const docs = res.data.documents || [];
+
+      setResults(docs);
       setTotal(res.data.results || 0);
+
+      // Save search state so BACK returns the results
+      sessionStorage.setItem(
+        SEARCH_KEY,
+        JSON.stringify({
+          query,
+          results: docs,
+          total: res.data.results || 0,
+        })
+      );
     } catch (err) {
       console.error("Search failed:", err);
       setError("Search failed. Try again.");
@@ -41,39 +100,62 @@ const SearchPage = () => {
     }
   };
 
+
+  /**
+    Return JSX Structure Overview
+   
+    1. Search Bar
+       - Input with search icon + Go button
+       - Handles Enter key
+   
+    2. Loading Indicator
+       - Appears while waiting for API response
+   
+    3. Error Display
+       - Friendly error box when search fails
+   
+    4. Results Section
+       - Shows a list of DocumentCard components
+       - Includes result count and the query
+   
+    5. No Results State
+       - If query is entered but results array is empty
+   
+    The layout centers everything and keeps it contained
+    within a max-width for readability.
+   */
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Search Bar */}
       <Card className="mb-6 p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          {/* Search Input */}
-          <div className="flex-1 w-full">
+          <div className="flex-1">
             <InputWithIcon
               icon={Search}
               placeholder="Search documents..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
             />
           </div>
 
-          {/* Go Button */}
-          <div className="w-full sm:w-auto">
-            <Button
-              onClick={handleSearch}
-              className="w-full sm:w-auto px-6 bg-blue-600 hover:bg-blue-700"
-            >
-              Go
-            </Button>
-          </div>
+          <Button
+            onClick={handleSearch}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+          >
+            Go
+          </Button>
         </div>
       </Card>
 
       {/* Loading */}
       {loading && (
-        <div className="text-center mt-10">
-          <Loader2 size={36} className="animate-spin mx-auto text-blue-600" />
-          <p className="text-gray-500 mt-2">Searching…</p>
-        </div>
+        <div className="text-center mt-10 text-gray-600">Searching…</div>
       )}
 
       {/* Error */}
@@ -85,44 +167,22 @@ const SearchPage = () => {
 
       {/* Results */}
       {!loading && results.length > 0 && (
-        <div className="mt-8 space-y-4">
-          <h2 className="text-lg font-semibold mb-4 text-gray-800">
+        <div className="mt-6 space-y-5">
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">
             {total} results found for “{query}”
           </h2>
 
           {results.map((doc) => (
-            <Card key={doc.id} className="p-6 hover:shadow-lg transition">
-              <div className="flex items-center gap-3 mb-2">
-                <FileText className="text-blue-600" size={22} />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {doc.file_name}
-                </h3>
-              </div>
-
-              <p className="text-gray-600 text-sm">
-                {doc.short_summary_en || "No summary available"}
-              </p>
-
-              <p className="text-xs text-gray-400 mt-2">
-                {doc.status} • {doc.createdAt?.slice(0, 10)}
-              </p>
-
-              {doc.storage_url && (
-                <Button
-                  onClick={() => window.open(doc.storage_url, "_blank")}
-                  className="mt-4 w-auto px-5 bg-blue-600 hover:bg-blue-700"
-                >
-                  View Document
-                </Button>
-              )}
-            </Card>
+            <DocumentCard key={doc.id} doc={doc} />
           ))}
         </div>
       )}
 
       {/* No Results */}
       {!loading && query && results.length === 0 && !error && (
-        <div className="text-center mt-10 text-gray-500">No results found.</div>
+        <div className="text-center mt-10 text-gray-500">
+          No results found.
+        </div>
       )}
     </div>
   );

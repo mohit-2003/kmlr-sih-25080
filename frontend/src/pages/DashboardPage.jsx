@@ -1,235 +1,157 @@
-import React from "react";
+// src/pages/DashboardPage.jsx
+
+/**
+  DashboardPage Overview
+ 
+  This page serves as the main landing screen for authenticated users.
+  It displays:
+   - A personalized greeting using the user's name and time-of-day logic
+   - Quick actions for frequently used features (e.g., Upload Documents)
+   - A list of the user's most recent document uploads
+ 
+  The page fetches the latest 5 uploaded documents from the backend and
+  displays them using the DocumentCard component. It handles loading states,
+  empty states, and data transformation to ensure consistent rendering.
+ 
+  DashboardPage acts as a centralized summary view, giving users an overview
+  of their activity and quick access to key workflows.
+ */
+
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
-//imported it for the use of role
+import { FileText, Upload } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { FileText, AlertTriangle, Upload, ArrowRight, Database } from "lucide-react";
+import DocumentCard from "@/components/DocumentCard"; 
+
+/**
+  DashboardPage Overview
+ 
+  This component displays:
+   - A greeting personalized by time of day and user name
+   - Quick Actions for fast navigation (Upload Documents, etc.)
+   - Most recent uploaded documents, fetched from the backend
+ 
+  The page acts as a high-level summary providing quick access
+  and recent activity visualization for the user.
+ */
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-
-  //role of the logged in person
   const { name } = useAuth();
 
-  // Dynamic greeting
+  const [recentDocs, setRecentDocs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Greeting
+  /**
+    Determine the appropriate greeting based on current hour.
+    Used to personalize the dashboard experience.
+   */
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  // Colors for departments (UI Highlighting)
-  const departmentColors = {
-    "Environmental Planning": "bg-green-100 text-green-800",
-    Technical: "bg-blue-100 text-blue-800",
-    Safety: "bg-red-100 text-red-800",
-  };
-
-  // Priority colors
-  const priorityStyles = {
-    high: "bg-red-100 text-red-700",
-    medium: "bg-yellow-100 text-yellow-700",
-    low: "bg-green-100 text-green-700",
-  };
-
-  const dashboardData = {
-    stats: {
-      totalDocuments: 6,
-      highPriority: 3,
-      recentUploads: 2
-    },
-    recentDocuments: [
-      {
-        title: "Metro Line 3 Environmental Impact Assessment",
-        description:
-          "Comprehensive environmental assessment for Metro Line 3 extension project",
-        source: "SharePoint",
-        date: "Jan 15, 2024",
-        priority: "high",
-        department: "Environmental Planning"
-      },
-      {
-        title: "Smart Ticketing System Technical Specifications",
-        description:
-          "Technical specifications for next-generation contactless ticketing systems...",
-        source: "Email",
-        date: "Jan 12, 2024",
-        priority: "high",
-        department: "Technical"
-      },
-      {
-        title: "Station Safety Protocols Manual",
-        description:
-          "Comprehensive safety protocols and emergency procedures for metro stations...",
-        source: "Manual Upload",
-        date: "Jan 10, 2024",
-        priority: "high",
-        department: "Safety"
+  // Fetch latest 5 documents, Prakhar
+  const fetchRecent = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SERVER_URL}/api/v1/documents?limit=5`
+      );
+      const payload = await res.json();
+      if (payload?.documents) {
+        // Normalizing the data used by DocumentCard
+        setRecentDocs(
+          payload.documents.map((d) => ({
+            id: d.id,
+            file_name: d.file_name,
+            createdAt: d.createdAt,
+            short_summary_en: d.short_summary_en || "",
+          }))
+        );
+      } else {
+        setRecentDocs([]);
       }
-    ]
+    } catch (err) {
+      console.error("Failed to fetch recent docs:", err);
+      setRecentDocs([]);
+    } finally {
+      setLoading(false);
+    }
   };
+  // Triggers the recent document fetch on initial page load, 
+  useEffect(() => {
+    fetchRecent();
+  }, []);
 
+   /**
+    Page Layout Structure (Returned JSX)
+   
+    The dashboard UI is organized into three main sections:
+   
+    1. Greeting Section
+       - Displays a personalized time-based greeting and the user’s name.
+       - Provides a friendly, contextual introduction to the page.
+   
+    2. Quick Actions
+       - Offers fast access to frequently used tasks (e.g., uploading documents).
+       - Uses simple buttons styled as actionable tiles.
+   
+    3. Recent Uploads
+       - Shows the user's five most recently uploaded documents.
+       - Dynamically handles three states:
+           a) Loading → shows a progress message
+           b) No results → shows an empty state message
+           c) Results available → displays DocumentCard components
+   
+   The layout uses a vertical spaced stack with responsive sizing
+    and centers the content for a clean dashboard experience.
+   */
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto p-4">
 
-      {/* Header */}
+      {/* Greeting */}
       <Card>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          {/*//showing the exact role*/}
-          {greeting}, {name}
-        </h1>
-        <p className="text-gray-600">Here's your personalized briefing for today</p>
+        <div className="flex flex-col gap-3">
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">
+            {greeting}, {name}
+          </h1>
+          <p className="text-gray-600">Here's your personalized briefing for today</p>
+        </div>
       </Card>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-        {/* Left Column */}
-        <div className="xl:col-span-2 space-y-6">
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            
-            {/* Total Documents */}
-            <Card className="hover:shadow-lg transition  border-indigo-400">
-              <div className="flex items-center justify-between ">
-                <div>
-                  <p className="text-sm text-gray-600">Total Documents</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {dashboardData.stats.totalDocuments}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </Card>
-
-            {/* High Priority */}
-            <Card className="hover:shadow-lg transition border-red-400 ">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">High Priority</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {dashboardData.stats.highPriority}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-            </Card>
-
-            {/* Recent Uploads */}
-            <Card className="hover:shadow-lg transition border-green-400 ">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Recent Uploads</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {dashboardData.stats.recentUploads}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </Card>
-
-          </div>
-
-          {/* Recent Documents */}
-          <Card>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Recent Documents</h2>
-              <button
-                onClick={() => navigate("/documents")}
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium cursor-pointer"
-              >
-                View All <ArrowRight size={14} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {dashboardData.recentDocuments.map((doc, i) => (
-                <div
-                  key={i}
-                  className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition cursor-pointer"
-                >
-                  <div className="flex justify-between mb-2 sm:gap-2">
-                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                      {doc.title}
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full sm:text-center  ${priorityStyles[doc.priority]}`}
-                      >
-                        {doc.priority.toUpperCase()} PRIORITY
-                      </span>
-                    </h3>
-                    <span className="text-sm text-gray-500 sm:text-xs sm:mt-2">{doc.date}</span>
-                  </div>
-
-                  <p className="text-gray-600 text-sm mb-3">{doc.description}</p>
-
-                  <div className="flex gap-2">
-                    <span className="text-xs px-3 py-1 bg-gray-100 rounded-full">
-                      {doc.source}
-                    </span>
-
-                    {/* Department Highlight */}
-                    <span
-                      className={`text-xs px-3 py-1 rounded-full ${
-                        departmentColors[doc.department] || "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {doc.department}
-                    </span>
-                  </div>
-
-                </div>
-              ))}
-            </div>
-          </Card>
-
+      {/* Quick Actions */}
+      <Card>
+        <h3 className="font-semibold text-lg mb-2">Quick Actions</h3>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => navigate("/documents")}
+            className="w-full flex items-center justify-between p-3 border rounded-xl hover:bg-blue-50 transition"
+          >
+            <span className="font-medium text-gray-700">Upload Documents</span>
+            <Upload className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
+      </Card>
 
-        {/* Right Column */}
-        <div className="space-y-6">
+      {/* Recent Uploads */}
+      <Card>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Uploads</h2>
 
-          <Card>
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Data Connections</h2>
-            <p className="text-gray-600 text-sm mb-4">Connect external sources</p>
-
-            <Button onClick={() => navigate("/integrations")} className="cursor-pointer">
-              <span className="flex items-center justify-center gap-2">
-                <Database size={18} /> Connect Sources
-              </span>
-            </Button>
-          </Card>
-
-          <Card>
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-            <button
-              onClick={() => navigate("/documents")}
-              className="w-full flex items-center justify-between p-4 border rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition"
-            >
-              <span className="font-medium text-gray-500">Upload Documents</span>
-              <Upload className="w-5 h-5 text-gray-500" />
-            </button>
-          </Card>
-
-          <Card>
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
-
-            {dashboardData.recentDocuments.slice(0, 3).map((doc, i) => (
-              <div key={i} className="flex items-start text-sm text-gray-700 mb-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
-                <div>
-                  <p className="font-medium">{doc.title}</p>
-                  <p className="text-gray-500">Uploaded {doc.date}</p>
-                </div>
-              </div>
+        {loading ? (
+          <div className="py-8 text-center text-gray-600">Loading recent uploads...</div>
+        ) : recentDocs.length === 0 ? (
+          <div className="py-8 text-center text-gray-600">No recent uploads</div>
+        ) : (
+          <div className="space-y-4 max-w-3xl mx-auto">
+            {recentDocs.map((doc) => (
+              <DocumentCard key={doc.id} doc={doc} compact />
             ))}
-          </Card>
-
-        </div>
-      </div>
+          </div>
+        )}
+      </Card>
     </div>
   );
 };

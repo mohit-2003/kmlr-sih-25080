@@ -39,14 +39,15 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
         <NavLink to="/integrations" className={linkClasses} onClick={onClose}>
           <Layers size={18} /> Integrations
         </NavLink>
-        <NavLink to="/documents" className={linkClasses} onClick={onClose}>
+        {/* changed from document to document, Prakhar*/}
+        <NavLink to="/documents" end className={linkClasses} onClick={onClose}>
           <FileText size={18} /> Upload Docs
         </NavLink>
-        {/* Updated the code on the basis of the role changes in users table*/}
+        {/* Updated the code on the basis of the role changes in users table , Prakhar*/}
         {(role === "SUPER_ADMIN" || role === "ADMIN") && (
-            <NavLink to="/add-employee" className={linkClasses}>
-                <UserPlus size={18} /> Add Employee
-            </NavLink>
+          <NavLink to="/add-employee" className={linkClasses}>
+            <UserPlus size={18} /> Add Employee
+          </NavLink>
         )}
       </nav>
     </aside>
